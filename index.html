@@ -525,7 +525,8 @@ function myUnit(){return {id:'my',p:0,t:'My story words',k:'words from her own w
 const LKEY='spellTrail.v2';
 const dayNum=(d=new Date())=>Math.floor((d.getTime()-d.getTimezoneOffset()*6e4)/864e5);
 const dayLabel=n=>new Date(n*864e5).toISOString().slice(0,10);
-function blank(){return {v:2,updatedAt:0,words:{},units:{},fish:0,gems:0,days:{},streak:{last:0,count:0},placement:{done:false,phase:1},custom:[],sheetId:'1bKJ40B54my4jpyPq0SiJErQDo1D67qNkJ_zUd0XAbqo',sheetUrl:'',voice:true,log:[]}}
+const SHEET_URL_DEFAULT='https://script.google.com/macros/s/AKfycbwDF7EwCJfGsjd7HemGmFHPoyNkaFQwYNc3lTclMBswHmEdvxt6oqXM7yg7gqz7zGu1/exec';
+function blank(){return {v:2,updatedAt:0,words:{},units:{},fish:0,gems:0,days:{},streak:{last:0,count:0},placement:{done:false,phase:1},custom:[],sheetId:'1bKJ40B54my4jpyPq0SiJErQDo1D67qNkJ_zUd0XAbqo',sheetUrl:SHEET_URL_DEFAULT,voice:true,log:[]}}
 /* Students: each has its own saved progress. The first student keeps the original key, so old progress carries over. */
 const RKEY='spellTrail.roster', SHARED=['sheetId','sheetUrl','voice','voiceName','rate'];
 let ROSTER={students:[{id:'main',name:''}],current:'main'};
@@ -536,8 +537,9 @@ const studentName=()=>student().name||'Student 1';
 function saveRoster(){try{localStorage.setItem(RKEY,JSON.stringify(ROSTER))}catch(e){}}
 function readStudent(id){try{const l=JSON.parse(localStorage.getItem(skey(id))||'null'); if(l&&l.v===2) return Object.assign(blank(),l);}catch(e){} return null}
 let S=readStudent(student().id)||blank();
+if(!S.sheetUrl) S.sheetUrl=SHEET_URL_DEFAULT;
 function switchStudent(id){const keep={};SHARED.forEach(k=>keep[k]=S[k]);
-  ROSTER.current=id;saveRoster();S=readStudent(id)||Object.assign(blank(),keep);SHARED.forEach(k=>S[k]=keep[k]);
+  ROSTER.current=id;saveRoster();S=readStudent(id)||Object.assign(blank(),keep);SHARED.forEach(k=>S[k]=keep[k]);if(!S.sheetUrl)S.sheetUrl=SHEET_URL_DEFAULT;
   if(typeof pickVoice==='function') pickVoice(); pullDB();}
 function addStudent(name){const id='s'+Date.now().toString(36);ROSTER.students.push({id,name});saveRoster();return id}
 let DB=null, SYNC='device', MCP=null, DL=null;
