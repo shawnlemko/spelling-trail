@@ -668,12 +668,12 @@ function englishVoices(){try{return speechSynthesis.getVoices().filter(v=>/^en/i
 function pickVoice(){const vs=englishVoices();VOICE=(S.voiceName&&vs.find(v=>v.name===S.voiceName))||vs[0]||null}
 if(HAS_TTS){pickVoice();try{speechSynthesis.onvoiceschanged=pickVoice}catch(e){}}
 const speaking=()=>HAS_TTS&&S.voice!==false;
-function say(t){if(!speaking())return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.rate=S.rate||.9;u.pitch=1;u.lang='en-US';if(VOICE)u.voice=VOICE;speechSynthesis.speak(u)}catch(e){}}
+function say(t,rate){if(!speaking())return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.rate=rate||S.rate||.9;u.pitch=1;u.lang='en-US';if(VOICE)u.voice=VOICE;speechSynthesis.speak(u)}catch(e){}}
 const ICON_SPEAK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/></svg>';
 const FISH='<svg viewBox="0 0 40 24" aria-hidden="true"><path d="M2 12c6-9 20-10 28 0-8 10-22 9-28 0z" fill="var(--salmon)"/><path d="M29 12l9-7v14z" fill="var(--salmon)"/><circle cx="10" cy="10" r="2" fill="var(--surface)"/></svg>';
 function bear(){return `<svg class="bear" viewBox="0 0 120 104" aria-hidden="true"><circle cx="26" cy="26" r="17" fill="var(--fur)"/><circle cx="94" cy="26" r="17" fill="var(--fur)"/><circle cx="26" cy="26" r="8" fill="var(--fur-light)"/><circle cx="94" cy="26" r="8" fill="var(--fur-light)"/><ellipse cx="60" cy="56" rx="44" ry="42" fill="var(--fur)"/><ellipse cx="60" cy="68" rx="20" ry="16" fill="var(--fur-light)"/><ellipse cx="60" cy="60" rx="7" ry="5" fill="var(--nose)"/><circle cx="43" cy="46" r="4.5" fill="var(--nose)"/><circle cx="77" cy="46" r="4.5" fill="var(--nose)"/><path d="M50 70q10 9 20 0" stroke="var(--nose)" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`}
-function speakBtn(t,label){return speaking()?`<button class="speak" data-say="${esc(t)}">${ICON_SPEAK}${label||'Hear it'}</button>`:''}
-function wire(){app.querySelectorAll('[data-say]').forEach(b=>b.onclick=()=>say(b.dataset.say))}
+function speakBtn(t,label){return speaking()?`<span class="row center-row"><button class="speak" data-say="${esc(t)}">${ICON_SPEAK}${label||'Hear it'}</button>${label?'':`<button class="speak" data-slow="${esc(t)}" aria-label="Hear it slowly">🐢 Slow</button>`}</span>`:''}
+function wire(){app.querySelectorAll('[data-say]').forEach(b=>b.onclick=()=>say(b.dataset.say));app.querySelectorAll('[data-slow]').forEach(b=>b.onclick=()=>saySlow(b.dataset.slow))}
 /* Sound-alike words: a picture cue says which meaning we want; the other spelling is not counted as wrong */
 const HOMO={sun:['son','☀️','shines in the sky'],red:['read','🔴','a colour'],taught:['taut','🧑‍🏫','what a teacher did'],
  ate:['eight','🍽️','had a meal'],wrote:['rote','✏️','put words on paper'],lesson:['lessen','📚','time to learn at school'],
@@ -686,6 +686,9 @@ Object.assign(HOMO,HOMO2);
 const homoOther=(it,v)=>{const h=HOMO[it.w];return !STRICT_UNITS.includes(it.unit)&&h&&h[0]&&h[0].split('|').includes(v)};
 function cueHTML(it){const h=HOMO[it.w];return h?`<div class="cue"><span class="cuei">${h[1]}</span>${esc(h[2])}</div>`:''}
 function sayItem(it){const h=HOMO[it.w];say(h?it.w+'. '+h[2]+'. '+it.w:it.w)}
+/* Slow replay: said twice, slowly, so the last sound (the k in milk) is not clipped */
+function saySlow(t){say(t.includes(' ')?t:t+'. . . '+t+'.',Math.max(.55,(S.rate||.9)-.3))}
+const slowBtn=id=>speaking()?`<button class="speak" id="${id}" aria-label="Hear it slowly">🐢 Slow</button>`:'';
 const unitLabel=u=>u.id+' '+u.t;
 const animalFor=u=>ANIMALS[UNITS.indexOf(u)%ANIMALS.length];
 function streakNow(){const t=dayNum();return (S.streak.last===t||S.streak.last===t-1)?S.streak.count:0}
@@ -884,9 +887,9 @@ function qSpell(q){
   if(!speaking()) return qCopy(q);
   const it=q.it;
   app.innerHTML=`${topBar()}<section class="card"><p class="prompt">Listen and spell</p>
-    <button class="speak big" id="hearW">${ICON_SPEAK}Hear it</button>${cueHTML(it)}
+    <div class="row center-row"><button class="speak big" id="hearW">${ICON_SPEAK}Hear it</button>${slowBtn('slowW')}</div>${cueHTML(it)}
     ${typeForm('')}<div id="fb" hidden></div></section>`;
-  $('hearW').onclick=()=>sayItem(it); bindType(q); setTimeout(()=>{if(!$('spellIn'))return;sayItem(it);$('spellIn').focus()},250);
+  $('hearW').onclick=()=>sayItem(it); $('slowW').onclick=()=>saySlow(it.w); bindType(q); setTimeout(()=>{if(!$('spellIn'))return;sayItem(it);$('spellIn').focus()},250);
 }
 function qCopy(q){
   const it=q.it;
@@ -922,11 +925,11 @@ function qRoot(q){
 function qDict(q){
   const u=RUN.unit, s=SENT[u.id], targets=sentTargets(u);
   app.innerHTML=`${topBar()}<section class="card"><p class="prompt">Hear it, write it</p>
-   <button class="speak big" id="hearS">${ICON_SPEAK}Hear it</button>
+   <div class="row center-row"><button class="speak big" id="hearS">${ICON_SPEAK}Hear it</button>${slowBtn('slowS')}</div>
    <form id="df" autocomplete="off"><label for="dIn" class="sr">Write the sentence</label>
     <textarea id="dIn" class="spell sentence" rows="3" autocapitalize="sentences" autocorrect="off" spellcheck="false"></textarea>
     <button class="btn block" type="submit">Check</button></form><div id="fb" hidden></div></section>`;
-  const play=()=>say(s); $('hearS').onclick=play; setTimeout(()=>{if(!$('dIn'))return;play();$('dIn').focus()},250);
+  const play=()=>say(s); $('hearS').onclick=play; $('slowS').onclick=()=>saySlow(s); setTimeout(()=>{if(!$('dIn'))return;play();$('dIn').focus()},250);
   $('df').onsubmit=e=>{e.preventDefault();const typed=words($('dIn').value);if(!typed.length)return;
     $('df').querySelectorAll('textarea,button').forEach(x=>x.disabled=true);
     let got=0; const miss=new Set();
