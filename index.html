@@ -1002,7 +1002,7 @@ function who(){
 /* ---------- Home: one big next step, little else ---------- */
 function nextAction(){
   const cur=currentUnit(), due=dueKeys().length;
-  if(!S.placement.done&&!UNITS.some(u=>unitState(u.id).passed)) return {label:'Start',cap:'Quick check',go:()=>startCheck(1)};
+  if(!S.placement.done&&!UNITS.some(u=>unitState(u.id).passed)) return {label:'Go!',cap:'Quick check',go:()=>startCheck(1)};
   if((due>=3&&!today().reviews)||due>=15) return {label:'Go!',cap:'Warm-up review',go:startReview};
   const bk=bankUnit();
   if(bk&&(S.lastTrack==='trail'||!cur)) return {label:'Go!',cap:'Gold words',go:()=>intro(bk.id)};
