@@ -207,6 +207,10 @@ textarea.sentence{font-family:var(--body),system-ui,sans-serif;font-size:1.3rem;
 .sbox.on{border-color:var(--lake);background:var(--lake-soft);animation:popin .25s ease}
 .sound{position:absolute;top:12px;right:12px;font-size:1.5rem;background:var(--surface);border:2px solid var(--line);border-radius:14px;width:52px;height:52px;z-index:2}
 #app{position:relative}
+.toolchip{display:inline-block;font-size:.85rem;font-weight:600;padding:3px 10px;border-radius:99px;background:var(--surface);border:1.5px solid var(--line);color:var(--ink);margin-bottom:6px}
+.toolgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.toolcard{display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 8px;border:2px solid var(--line);border-radius:16px;background:var(--surface);color:var(--ink);font:inherit}
+.toolcard .ti{font-size:2rem}.toolcard .tex{color:var(--muted);font-size:.9rem}
 </style>
 
 </head>
@@ -719,21 +723,22 @@ const LINES={gap:['Which letters make that sound?','Pick the letters for this so
  copy:['Look closely at this word. When you are ready, hide it and spell it.'],
  retry:["Let's fix that one. Look closely, then hide it and spell it."],
  hunt:['One word is spelled wrong. Can you find it?','Find the mistake.'],
- root:['What does this word part mean?'],dict:['Listen to the sentence, then write it.'],
+ root:['What does this word part mean?'],sort:['Look at the coloured part. Is it open, or closed?'],dict:['Listen to the sentence, then write it.'],
  boxes:['How many sounds do you hear? Fill one box for each sound.','Tap the sounds in order.'],
  check:["Let's see what you know. Spell this word."]};
 /* What to say when a question appears. Without the coach, it says just the word, as before. */
 function promptSpeech(q){
   const t=q.retry?'retry':q.check?'check':q.type, it=q.it;
-  const word=['copy','retry','hunt','dict','root'].includes(t)?'':itemSpeech(it);
-  if(!coachOn()) return t==='hunt'?'Find the mistake.':(t==='copy'||t==='retry'||t==='root')?'':word;
+  const word=['copy','retry','hunt','dict','root','sort'].includes(t)?'':itemSpeech(it);
+  if(!coachOn()) return t==='hunt'?'Find the mistake.':(t==='copy'||t==='retry'||t==='root'||t==='sort')?'':word;
   return pickOne(LINES[t]||['']).concat(word?' '+word:'');
 }
 function sayPrompt(q,delay){const s=promptSpeech(q);if(s&&speaking())setTimeout(()=>{if(RUN&&RUN.q[RUN.i]===q)say(s)},delay||250)}
 function feedbackSpeech(ok,it,retry){
   if(!coachOn()) return ok?'':it.w;
   if(ok) return retry?pickOne(['Fixed it!','Yes, that is it now.']):pickOne(['Yes!','Nice work!','You got it!','Great spelling!']);
-  return `Almost. ${it.w} is spelled ${spellOut(it.w)}.`;
+  const why=typeof toolWhy==='function'?toolWhy(it):'';
+  return `Almost. ${why} ${it.w} is spelled ${spellOut(it.w)}.`;
 }
 function endSpeech(status,gem,kind){
   if(!coachOn()) return '';
@@ -771,6 +776,52 @@ function qBoxes(q){
       if(word===it.w) $('boxes').classList.add('glow'); answer(q,word===it.w,word)}});
   $('undo').onclick=()=>{picked.pop();draw()};
 }
+/* ---------- Spelling Toolbox: the real terms, one card each, unlocked as she meets them ---------- */
+const TOOLS=[
+ {id:'short',n:'Short vowel',i:'🔒',t:'One vowel closed in by consonants makes its short sound.',ex:'c-a-t',u:['1.1','1.2']},
+ {id:'blend',n:'Blend',i:'🔗',t:'Two or three consonants side by side. You hear every one.',ex:'st-o-p',u:['1.3']},
+ {id:'digraph',n:'Digraph',i:'👯',t:'Two letters that make one sound.',ex:'sh, ch, th, ng',u:['2.1','2.6','2.8']},
+ {id:'guard',n:'Short vowel guards',i:'🛡️',t:'Right after a short vowel, use the bigger spelling: ck, tch, dge, ff, ll, ss.',ex:'duck, catch, edge, bell',u:['2.2','2.3','2.4','2.5']},
+ {id:'silent',n:'Silent letters',i:'🤫',t:'Some letters are written but not said.',ex:'knee, wrong, lamb',u:['2.7']},
+ {id:'magic',n:'Magic e',i:'✨',t:'A silent e at the end makes the vowel say its name.',ex:'tap → tape',u:['3.1','3.2','6.3']},
+ {id:'soft',n:'Soft c and g',i:'🪶',t:'Before e, i or y, c says s and g often says j.',ex:'city, giant',u:['3.3']},
+ {id:'team',n:'Vowel team',i:'🤝',t:'Two letters work together to make one vowel sound. Middle teams and end teams.',ex:'rain / day',u:['4.1','4.2','4.3','4.4','4.5','4.6','4.7','4.8','4.9','4.10','4.11','4.12']},
+ {id:'rctl',n:'R-controlled vowel',i:'🐯',t:'An r after a vowel takes over its sound.',ex:'car, fern, bird, fork',u:['5.1','5.2','5.3']},
+ {id:'closed',n:'Closed syllable',i:'🚪',t:'A part that ends in a consonant. The door is shut, so the vowel is short.',ex:'rab-bit',u:['6.1']},
+ {id:'open',n:'Open syllable',i:'🌤️',t:'A part that ends in a vowel. The door is open, so the vowel says its name.',ex:'ti-ger',u:['6.2']},
+ {id:'cle',n:'Consonant + le',i:'🧱',t:'The last part is a consonant plus le.',ex:'ta-ble, can-dle',u:['6.4']},
+ {id:'claps',n:'Clap the parts',i:'👏',t:'Clap every part, spell each one, then check none went missing.',ex:'fan-tas-tic',u:['6.5','6.6']},
+ {id:'endings',n:'Ending check',i:'🔧',t:'Vowel ending? Drop the silent e, double after 1-1-1, change y to i.',ex:'taste → tasty',u:['7.1','7.2','7.3','7.4','7.5','7.6','7.7','7.8','7.9','10.5']},
+ {id:'heart',n:'Heart part',i:'♥',t:'Most of the word follows the rules. Learn the one tricky part by heart.',ex:'s♥ai♥d',u:['8.1','8.2','8.3','8.4','10.7']},
+ {id:'schwa',n:'Schwa',i:'😶',t:'A lazy vowel that sounds like uh. Use a family word or your spelling voice.',ex:'please → pleasant',u:['9.1','9.2','9.3','9.4','9.5','9.7','9.8','9.9']},
+ {id:'parts',n:'Prefixes and roots',i:'🧩',t:'Words are built from parts. Keep every part whole.',ex:'mis + spell, tele + scope',u:['9.6','10.1','10.2','10.3','10.4','10.6']}];
+const TOOL_OF={}; TOOLS.forEach(t=>t.u.forEach(id=>TOOL_OF[id]=t));
+const toolFor=id=>{const u=UNIT_BY_ID[id];return TOOL_OF[id]||(u&&u.bank?TOOLS.find(t=>t.id==='heart'):null)};
+const toolChip=t=>t?`<span class="toolchip">${t.i} ${esc(t.n)}</span>`:'';
+function unlockTool(id){const t=toolFor(id);if(!t)return null;S.tools=S.tools||{};if(S.tools[t.id])return null;S.tools[t.id]=dayNum();save();return t}
+const myTools=()=>TOOLS.filter(t=>(S.tools||{})[t.id]||t.u.some(id=>unitState(id).passed));
+function toolbox(){
+  SCREEN='tools'; const got=myTools();
+  app.innerHTML=`<div class="top"><button class="back" id="back" aria-label="Back">←</button><h2>🧰 Toolbox</h2></div>
+   <div class="toolgrid">${got.map(t=>`<button class="toolcard" data-say="${esc(t.n+'. '+t.t)}"><span class="ti">${t.i}</span><b>${esc(t.n)}</b><span class="tex">${esc(t.ex)}</span></button>`).join('')||'<p class="muted center-t">Finish a stop to get your first tool.</p>'}</div>`;
+  $('back').onclick=home; wire(); window.scrollTo(0,0);
+  if(coachOn()) setTimeout(()=>say('Your spelling tools. Tap one to hear it.'),300);
+}
+/* Sort: is this part open, closed, or magic e? */
+const SORT_UNITS=['6.1','6.2','6.3','6.4'];
+function sylType(s){if(/[aeiou]r/.test(s))return null;if(/[aeiouy][^aeiouy]e$/.test(s))return 'Magic e';if(/le$/.test(s)&&s.length<=4&&!/[aeiou]/.test(s.slice(0,-2)))return null;
+  return /[aeiouy]$/.test(s)?'Open':/[aeiouy]/.test(s)?'Closed':null}
+function sortPart(it){if(!SORT_UNITS.includes(it.unit)||!it.syl)return null;
+  const order=it.unit==='6.3'?[...it.syl].reverse():it.syl;for(const s of order){const k=sylType(s);if(k&&(it.unit!=='6.3'||k==='Magic e'))return {s,k}}return null}
+function qSort(q){
+  const it=q.it, sp=sortPart(it), opts=it.unit==='6.3'?['Closed','Open','Magic e']:['Closed','Open'];
+  const head=`<div class="gapword small2">${it.syl.map(x=>x===sp.s?`<b class="hl">${esc(x)}</b>`:esc(x)).join('<span class="dotsep">·</span>')}</div>`;
+  choiceQ(q,`Is <b>${esc(sp.s)}</b> open or closed?`,head,opts,sp.k);
+}
+function toolWhy(it){const sp=sortPart(it);
+  if(sp&&sp.k==='Open')return `${sp.s} is open, so the vowel says its name.`;
+  if(sp&&sp.k==='Closed')return `${sp.s} is closed, so the vowel is short.`;
+  const t=toolFor(it.unit);return t?`Use your ${t.n.toLowerCase()} tool.`:''}
 /* ---------- Helpers ---------- */
 const app=document.getElementById('app');
 const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -860,13 +911,14 @@ function home(){
      ${fresh?'<button class="link" id="skip">Skip the check</button>':''}
    </section>
    ${sceneSVG(sceneOf())}
+   <div class="row center-row">${myTools().length?'<button class="btn secondary" id="tbx">🧰 Toolbox</button>':''}</div>
    <div class="row center-row">${multi?'<button class="link" id="who">Switch</button>':''}<button class="link" id="grown">Grown-ups</button></div>`;
   if(S.newBuddy){S.newBuddy=false;save()}
   if(HAS_TTS){$('snd').onclick=()=>{S.voice=S.voice===false;save();home();if(speaking())say(coachOn()?"Sound is on. I'll talk you through it.":'Sound is on.')}}
   greet();
   if(nx) $('go').onclick=nx.go;
   if(fresh) $('skip').onclick=()=>{S.placement.done=true;save();home()};
-  $('grown').onclick=grownups; if(multi) $('who').onclick=who;
+  $('grown').onclick=grownups; if(multi) $('who').onclick=who; if($('tbx')) $('tbx').onclick=toolbox;
   window.scrollTo(0,0);
 }
 function trailMap(){
@@ -904,13 +956,14 @@ function intro(id){
   const ex=u.mode==='mix'?shuffle(u.items).slice(0,4):u.items.slice(0,4);
   app.innerHTML=`<div class="top"><button class="back" id="back" aria-label="Back">←</button><h2>${esc(u.t)}</h2></div>
    <section class="card">
-     <div class="rule"><p class="rtext">${esc(u.r)}</p>${speakBtn(u.r,'Hear it')}</div>
+     <div class="rule">${toolChip(toolFor(u.id))}<p class="rtext">${esc(u.r)}</p>${speakBtn(u.r,'Hear it')}</div>
      ${FAM[u.id]?`<div class="fams">${FAM[u.id].map(([k,ws])=>`<div class="fam"><b class="hl famk">${esc(k)}</b>${ws.split(' ').map(w=>`<button class="ex" data-say="${esc(w)}">${esc(w).replace(esc(k),`<b class="hl">${esc(k)}</b>`)}</button>`).join('')}</div>`).join('')}</div>`
      :`<div class="examples">${ex.map(it=>`<button class="ex" data-say="${esc(it.w)}">${display(it)}</button>`).join('')}</div>`}
    </section>
    <button class="btn block" id="go">Start</button>`;
   SCREEN='intro'; $('back').onclick=home; $('go').onclick=()=>startUnit(u); wire(); window.scrollTo(0,0);
-  if(speaking()) setTimeout(()=>say(coachOn()?`New stop: ${u.t}. ${u.r} Tap the words to hear them. Then tap Start.`:u.r),300);
+  const nt=id==='my'?null:unlockTool(id);
+  if(speaking()) setTimeout(()=>say(coachOn()?`New stop: ${u.t}. ${nt?`You get a new tool: ${nt.n}. `:''}${u.r} Tap the words to hear them. Then tap Start.`:u.r),300);
 }
 
 /* ---------- Rounds ---------- */
@@ -919,13 +972,14 @@ function qType(it,pref){
   if(pref==='hunt') return it.wrong.length?'hunt':'spell';
   if(pref==='boxes'){if(boxOk(it))return 'boxes';pref='choose'}
   if(pref==='choose'&&ROOT_UNITS.includes(it.unit)&&rootOf(it.w)) return 'root';
+  if(pref==='sort') return sortPart(it)?'sort':qType(it,'choose');
   if(pref==='choose'){if(it.kind==='mark'&&it.galts&&it.galts.some(a=>a))return 'gap';if(it.kind==='syl')return 'build';if(it.kind==='suf')return 'join';if(it.kind==='map')return 'base';pref='pick'}
   if(pref==='pick') return it.wrong.length?'pick':'spell';
   return 'spell';
 }
 function startUnit(u){
   const items=shuffle(u.items).sort((a,b)=>{const A=S.words[a.key]||{b:0,s:0},B=S.words[b.key]||{b:0,s:0};return A.b-B.b||A.s-B.s}).slice(0,6);
-  const q=shuffle(items).map((it,i)=>({it,type:qType(it,PLAN[i%PLAN.length])}));
+  const q=shuffle(items).map((it,i)=>({it,type:qType(it,i===0&&SORT_UNITS.includes(u.id)?'sort':PLAN[i%PLAN.length])}));
   if(speaking()&&u.p&&SENT[u.id]&&sentTargets(u).length) q.push({type:'dict',bonus:true,it:{key:'dict'}});
   RUN={kind:'unit',unit:u,q,i:0,fish:0,first:{},n:q.length-(q[q.length-1].bonus?1:0)}; showQ();
 }
@@ -946,7 +1000,7 @@ function topBar(){
 function showQ(){
   if(RUN.i>=RUN.q.length) return endRound();
   const q=RUN.q[RUN.i];
-  SCREEN='q'; setTimeout(walkBear,0); ({gap:qGap,pick:qPick,build:qBuild,join:qJoin,base:qBase,spell:qSpell,copy:qCopy,hunt:qHunt,root:qRoot,dict:qDict,boxes:qBoxes})[q.type](q); sayPrompt(q);
+  SCREEN='q'; setTimeout(walkBear,0); ({gap:qGap,pick:qPick,build:qBuild,join:qJoin,base:qBase,spell:qSpell,copy:qCopy,hunt:qHunt,root:qRoot,dict:qDict,boxes:qBoxes,sort:qSort})[q.type](q); sayPrompt(q);
   $('back').onclick=home; wire(); window.scrollTo(0,0);
 }
 function ruleOf(it){const u=it.unit==='my'?myUnit():UNIT_BY_ID[it.unit];return u?u.r:''}
@@ -957,7 +1011,7 @@ function answer(q,ok,attempt){
     if(!ok&&!q.check){const b=RUN.q.findIndex(x=>x.bonus);RUN.q.splice(b<0?RUN.q.length:b,0,{it,type:'copy',retry:true})}}
   const el=$('fb'); el.hidden=false;
   if(ok){const src=app.querySelector('.choice.right,#spellIn,#built,.hw.found');if(src){src.classList.add('glow')} if(firstTime) flyFish(src);el.className='fb good';el.innerHTML=`<h3>${q.retry?'Fixed it!':'Yes!'}${firstTime?' +1 '+FISH:''}</h3>`;}
-  else{el.className='fb try';el.innerHTML=`<h3>Almost!</h3>${attempt!=null?diffHTML(attempt,it.w):''}${attempt==null?`<div class="bigword">${heartHTML(it.w)||esc(it.w)}</div>`:''}<p>${esc(ruleOf(it))}</p>`;}
+  else{el.className='fb try';el.innerHTML=`<h3>Almost!</h3>${attempt!=null?diffHTML(attempt,it.w):''}${attempt==null?`<div class="bigword">${heartHTML(it.w)||esc(it.w)}</div>`:''}${toolChip(it.unit&&it.unit!=='my'?toolFor(it.unit):null)}<p>${esc(toolWhy(it).includes(' is ')?toolWhy(it):ruleOf(it))}</p>`;}
   el.innerHTML+=`<button class="btn block" id="nextBtn">Next</button>`;
   {const fs=feedbackSpeech(ok,it,q.retry);if(fs)setTimeout(()=>say(fs),200);}
   const nb=$('nextBtn'); nb.onclick=()=>{RUN.i++;showQ()}; nb.focus({preventScroll:true});
