@@ -1,0 +1,1096 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bear's Spelling Trail</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Lexend:wght@400;500;600&display=swap">
+<style>
+/* Layout: one narrow column, one task per screen. Forest-lake palette; large Lexend type for easy reading. */
+:root{
+  --bg:#EAF2EE; --surface:#FFFFFF; --ink:#1E2B2C; --muted:#56686A; --line:#CFDDD7;
+  --lake:#2B6C93; --lake-soft:#DCEBF3; --pine:#2E6B4C; --pine-soft:#DDEFE4;
+  --salmon:#D9654D; --salmon-soft:#FBE4DD; --amber:#9A6200; --amber-soft:#FBEFD6; --gold:#B8860B;
+  --fur:#8A5A3B; --fur-light:#D9B48F; --nose:#2A1D16; --on-accent:#FFFFFF;
+  --display:"Fredoka","Trebuchet MS",system-ui,sans-serif;
+  --body:"Lexend","Verdana",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111A1B; --surface:#1A2627; --ink:#E6EFEC; --muted:#9CB0AE; --line:#2C3D3E;
+  --lake:#78B6DB; --lake-soft:#1C3442; --pine:#79CC9F; --pine-soft:#1B3528;
+  --salmon:#F2907A; --salmon-soft:#3D2420; --amber:#E9B551; --amber-soft:#3A2D12; --gold:#E9C46A; --on-accent:#111A1B; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111A1B; --surface:#1A2627; --ink:#E6EFEC; --muted:#9CB0AE; --line:#2C3D3E;
+  --lake:#78B6DB; --lake-soft:#1C3442; --pine:#79CC9F; --pine-soft:#1B3528;
+  --salmon:#F2907A; --salmon-soft:#3D2420; --amber:#E9B551; --amber-soft:#3A2D12; --gold:#E9C46A; --on-accent:#111A1B; color-scheme:dark}
+html,body{height:100%}
+select.field{appearance:auto}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:18px;line-height:1.5;margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+#app{max-width:640px;margin:0 auto;padding-block:20px 48px;display:flex;flex-direction:column;gap:16px}
+h1,h2,h3{font-family:var(--display);font-weight:600;line-height:1.2;text-wrap:balance;margin:0}
+h1{font-size:1.75rem} h2{font-size:1.3rem} h3{font-size:1.05rem;margin-top:6px}
+p{margin:0} .muted{color:var(--muted)} .small{font-size:.88rem} .tab{font-variant-numeric:tabular-nums}
+.eyebrow{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,label:focus-visible{outline:3px solid var(--lake);outline-offset:2px}
+.btn{border:0;border-radius:14px;padding:12px 20px;font-family:var(--display);font-weight:600;font-size:1.1rem;background:var(--salmon);color:var(--on-accent);min-height:52px;display:inline-flex;align-items:center;justify-content:center}
+.btn.secondary{background:var(--surface);color:var(--ink);border:2px solid var(--line);font-size:1rem;min-height:46px}
+.btn.danger{color:var(--salmon)}
+.btn.block{width:100%}
+.link{background:none;border:0;color:var(--lake);text-decoration:underline;padding:6px 0;font-size:.95rem}
+.link.center{align-self:center}
+.card{background:var(--surface);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.spread{justify-content:space-between}
+.hero{display:flex;gap:14px;align-items:center}
+.hero svg{width:84px;flex:none}
+.herotext{display:flex;flex-direction:column;gap:6px;min-width:0}
+.fishcount{display:inline-flex;align-items:center;gap:6px;font-family:var(--display);font-weight:600;font-size:1.1rem;color:var(--lake);font-variant-numeric:tabular-nums}
+.fishcount svg{width:30px;height:18px}
+.streak{background:var(--amber-soft);color:var(--amber);padding:3px 11px;border-radius:99px;font-weight:600;font-size:.85rem;white-space:nowrap}
+.top{display:flex;align-items:center;gap:12px}
+.back{background:var(--surface);border:0;border-radius:12px;width:46px;height:46px;font-size:1.3rem;flex:none}
+.bar{flex:1;height:12px;background:var(--line);border-radius:99px;overflow:hidden}
+.bar.big{flex:none;height:16px}
+.bar>i{display:block;height:100%;background:var(--pine);border-radius:99px;transition:width .3s}
+.step{display:flex;gap:14px;align-items:center;text-align:left;width:100%;background:var(--bg);border:2px solid var(--line);border-radius:16px;padding:12px 14px}
+.step>span:last-child{display:flex;flex-direction:column}
+.step.primary{background:var(--lake);border-color:var(--lake);color:var(--on-accent)}
+.step.primary .muted{color:inherit;opacity:.85}
+.stepn{font-family:var(--display);font-weight:600;min-width:64px;font-size:.95rem}
+.phases{display:flex;flex-direction:column;gap:8px}
+.phase{border:2px solid var(--line);border-radius:16px;overflow:hidden}
+.phase.open{border-color:var(--lake)}
+.phead{display:flex;gap:12px;align-items:center;width:100%;background:none;border:0;padding:10px 12px;text-align:left}
+.ptext{display:flex;flex-direction:column;flex:1;min-width:0}
+.pnum{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--lake-soft);color:var(--lake);font-family:var(--display);font-weight:600;flex:none}
+.pnum.done{background:var(--pine);color:var(--on-accent)}
+.units{list-style:none;margin:0;padding:0 10px 10px;display:flex;flex-direction:column;gap:6px}
+.unit{display:flex;gap:12px;align-items:center;width:100%;text-align:left;background:var(--bg);border:0;border-radius:12px;padding:8px 10px}
+.utext{display:flex;flex-direction:column;flex:1;min-width:0}
+.udot{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--line);flex:none;font-weight:600;font-size:.9rem}
+.unit.open .udot{border-color:var(--lake);border-width:3px}
+.unit.passed .udot{background:var(--pine);border-color:var(--pine);color:var(--on-accent)}
+.unit.mastered .udot{background:var(--gold);border-color:var(--gold);color:var(--on-accent)}
+.unit.locked{opacity:.5;cursor:default}
+.ani{font-size:1.4rem}
+.friends{display:flex;flex-wrap:wrap;gap:6px}
+.friend{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-size:1.4rem;background:var(--pine-soft)}
+.treasure{justify-content:space-between}
+.pieces{display:flex;gap:3px}
+.pieces i{width:16px;height:20px;border-radius:3px;background:var(--line)}
+.pieces i.got{background:var(--amber)}
+.gems{display:inline-flex;align-items:center;gap:8px}
+.gem{width:18px;height:18px;background:var(--lake);transform:rotate(45deg);border-radius:3px;flex:none;display:inline-block}
+.gem.big{width:30px;height:30px;margin:6px}
+.rule{background:var(--lake-soft);border-radius:14px;padding:14px 16px}
+.rtext{font-size:1.15rem;font-weight:500}
+.examples{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.ex{border:2px solid var(--line);background:var(--surface);border-radius:12px;padding:10px;font-size:1.2rem;letter-spacing:.03em}
+.hl{color:var(--salmon);font-weight:600}
+.dotsep{color:var(--muted);padding:0 2px}
+.prompt{font-family:var(--display);font-weight:500;font-size:1.25rem}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.choices.c3{grid-template-columns:1fr 1fr 1fr}
+.choice{border:2px solid var(--line);background:var(--surface);border-radius:16px;padding:16px 8px;font-size:1.4rem;letter-spacing:.04em;min-height:70px;overflow-wrap:anywhere}
+.choice.right{border-color:var(--pine);background:var(--pine-soft)}
+.choice.wrong{border-color:var(--amber);background:var(--amber-soft)}
+.choice:disabled{cursor:default}
+.gapword{font-size:2.3rem;letter-spacing:.08em;text-align:center;font-weight:500}
+.gapword.small2{font-size:1.8rem}
+.hole{display:inline-block;min-width:1.4em;border-bottom:4px solid var(--salmon);color:var(--salmon)}
+.bigword{font-size:2.3rem;letter-spacing:.1em;text-align:center;font-weight:500;padding:6px 0;overflow-wrap:anywhere}
+.speak{border:2px solid var(--line);background:var(--surface);border-radius:14px;padding:9px 16px;display:inline-flex;gap:8px;align-items:center;align-self:center;font-weight:500}
+.speak.big{padding:18px 26px;font-size:1.2rem;border-color:var(--lake);color:var(--lake)}
+.speak svg{width:22px;height:22px}
+form{display:flex;flex-direction:column;gap:10px}
+input.spell{font:inherit;font-size:1.8rem;letter-spacing:.08em;text-align:center;padding:12px;border-radius:14px;border:2px solid var(--line);background:var(--bg);color:var(--ink);width:100%;box-sizing:border-box}
+.built{min-height:62px;border:2px dashed var(--line);border-radius:14px;display:flex;align-items:center;justify-content:center;gap:4px;font-size:1.8rem;padding:6px;flex-wrap:wrap}
+.built span{background:var(--lake-soft);border-radius:8px;padding:0 8px}
+.tiles{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.tile{border:2px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 18px;font-size:1.4rem}
+.tile:disabled{opacity:.3}
+.fb{border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.fb.good{background:var(--pine-soft)} .fb.good h3{color:var(--pine)}
+.fb.try{background:var(--amber-soft)} .fb.try h3{color:var(--amber)}
+.diff{display:flex;flex-direction:column;gap:2px}
+.diff .lbl{font-size:.78rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.diff .ltrs{font-size:1.6rem;letter-spacing:.12em;overflow-wrap:anywhere}
+.diff mark{background:none;color:var(--salmon);text-decoration:underline 3px;text-underline-offset:5px}
+.diff s{color:var(--muted)}
+.done{align-items:center;text-align:center}
+.done svg.bear{width:100px}
+.prize{background:var(--amber-soft);border-radius:16px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;box-sizing:border-box}
+.bigani{font-size:3rem;line-height:1.2}
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.stats div{background:var(--bg);border-radius:12px;padding:10px;display:flex;flex-direction:column}
+.stats b{font-family:var(--display);font-size:1.4rem;font-variant-numeric:tabular-nums}
+.stats span{font-size:.82rem;color:var(--muted)}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:500}
+label{font-size:.9rem;font-weight:500}
+.field{font:inherit;padding:10px 12px;border-radius:10px;border:2px solid var(--line);background:var(--bg);color:var(--ink);width:100%;box-sizing:border-box}
+.field.grow{flex:1;min-width:140px;width:auto}
+.filebtn{cursor:pointer}
+.check{display:flex;gap:10px;align-items:center}
+.check input{width:22px;height:22px}
+@keyframes pop{from{transform:scale(.97);opacity:.5}to{transform:none;opacity:1}}
+.fb{animation:pop .18s ease-out}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+@media (max-width:420px){.choice{font-size:1.15rem}.choices.c3{grid-template-columns:1fr}.gapword,.bigword{font-size:1.8rem}h1{font-size:1.45rem}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.goal{display:flex;align-items:center;gap:12px}.goal .bar{flex:1}
+.btn.go{flex-direction:column;min-height:96px;font-size:2rem;gap:0;width:100%}
+.btn.go .cap{font-size:1rem;font-weight:500;opacity:.9}
+.center-t{text-align:center}
+.tiles3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tile3{background:var(--surface);border:0;border-radius:18px;padding:14px 8px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.t3i{font-size:1.8rem;line-height:1.2}
+.tile3 .gem.big{margin:8px}
+.fishcount.small2{font-size:1rem}
+.pieces.big i{width:28px;height:34px}
+.endt{font-size:2.2rem;display:flex;align-items:center;gap:8px}.endt svg{width:48px;height:30px}
+.score{font-family:var(--display);font-size:1.4rem;color:var(--muted)}
+.fb h3{display:flex;align-items:center;gap:6px}.fb h3 svg{width:30px;height:18px}
+.rule{display:flex;flex-direction:column;gap:10px}
+.top h2{flex:1}
+.cue{align-self:center;display:inline-flex;align-items:center;gap:8px;background:var(--lake-soft);border-radius:99px;padding:6px 16px 6px 8px;font-size:1.05rem}
+.cuei{font-size:1.6rem;line-height:1}
+.fb.same{background:var(--lake-soft)} .fb.same h3{color:var(--lake)}
+.divider{margin:10px 4px 0;color:var(--amber)}
+.heart{color:var(--salmon);font-weight:700;text-decoration:underline wavy var(--salmon);text-underline-offset:5px}
+.heart::after{content:'♥';font-size:.5em;vertical-align:super;margin-left:1px}
+.hunt{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:8px 0 14px}
+.hw{border:2px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:10px 12px;font:inherit;font-size:1.25rem;min-height:48px}
+.hw.found{border-color:var(--gold);background:var(--amber-soft)}
+.hw.wrong{border-color:var(--amber)}
+textarea.sentence{font-family:var(--body),system-ui,sans-serif;font-size:1.3rem;letter-spacing:.02em;text-align:left;resize:vertical;margin:10px 0}
+.sentshow{font-size:1.3rem;line-height:1.6}
+.sentshow mark{background:var(--amber-soft);color:var(--ink);padding:0 3px;border-radius:4px}
+.fams{display:grid;gap:10px}
+.fam{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.famk{font-size:1.4rem;min-width:70px}
+.names{display:grid;gap:12px;margin-top:16px}
+.btn.name{font-size:1.5rem;padding:20px}
+.center-row{justify-content:center;gap:16px}
+.pickani{font-size:3rem;background:var(--surface);border:2px solid var(--line);border-radius:18px;padding:8px 18px;min-width:88px}
+.pickani:hover{border-color:var(--pine)}
+</style>
+
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* ---------- Scope and sequence: 9 phases, phoneme-grapheme units ----------
+ Entry formats in w (space separated):
+   r[ai]n          marked spelling choice; wrong options come from the unit's alts
+   rab-bit         syllables (mode syl)
+   taste+y>tasty   base + ending (mode suf); omit >result when it is a plain join
+   take>took       base word to new word (mode map)
+   ~wrong          extra wrong spellings to offer, e.g. s[ai]d~sed
+*/
+const PHASES=[
+ {n:1,name:'Sound Pond',sub:'Short vowels and blends',animal:'🐸'},
+ {n:2,name:'Letter Team Meadow',sub:'sh, ch, ck, ff, tch, dge, ng',animal:'🐝'},
+ {n:3,name:'Silent E Hill',sub:'Magic e and soft c, g',animal:'🐐'},
+ {n:4,name:'Vowel Team Forest',sub:'Two letters, one vowel sound',animal:'🦉'},
+ {n:5,name:'Bossy R River',sub:'ar, or, er, ir, ur',animal:'🦦'},
+ {n:6,name:'Syllable Mountain',sub:'Long words, one part at a time',animal:'🐐'},
+ {n:7,name:'Ending Caves',sub:'Rules for adding endings',animal:'🦇'},
+ {n:8,name:'Tricky Word Rocks',sub:'Heart words and changing past',animal:'🦎'},
+ {n:9,name:'Hidden Vowel Island',sub:'Schwa, word families, endings',animal:'🐢'}];
+
+const UNITS=[
+ // Phase 1
+ {id:'1.1',p:1,t:'Short a, i, o',k:'short vowels',r:'One vowel between two consonants makes its short sound.',alts:['a','i','o'],
+  w:'m[a]p s[i]t h[o]t b[a]g w[i]n l[o]g c[a]mp f[i]sh p[o]nd r[a]n'},
+ {id:'1.2',p:1,t:'Short e and u',k:'short vowels',r:'Listen for the middle sound: e as in bed, u as in cup.',alts:['e','u','i'],
+  w:'b[e]d c[u]p r[e]d s[u]n n[e]t b[u]g t[e]n j[u]mp sl[e]d dr[u]m'},
+ {id:'1.3',p:1,t:'Blends',k:'two sounds side by side',r:'In a blend you hear every letter. Say it slowly so none goes missing.',mode:'drop',
+  w:'[st]op [fr]og [gr]in [cl]ap [dr]ip [sp]ot ha[nd] la[mp] be[st] te[nt]'},
+ // Phase 2
+ {id:'2.1',p:2,t:'sh, ch, th',k:'digraphs',r:'Two letters can make one new sound.',alts:['sh','ch','th'],
+  w:'[sh]ip [ch]ip [th]in fi[sh] ba[th] [ch]op [sh]ut mo[th] ben[ch] [th]ud'},
+ {id:'2.2',p:2,t:'ck or k',k:'the /k/ sound at the end',r:'Right after a short vowel, use ck. After a consonant, use k.',alts:['ck','k','c'],
+  w:'ba[ck] du[ck] pi[ck] ro[ck] ne[ck] tru[ck] ban[k] mil[k] des[k] dar[k]'},
+ {id:'2.3',p:2,t:'ff, ll, ss',k:'doubled letters',r:'Short word, short vowel, ends in f, l or s? Double it.',alts:{ll:['l'],ss:['s'],ff:['f']},
+  w:'be[ll] hi[ll] gra[ss] me[ss] o[ff] cli[ff] sti[ll] dre[ss] pu[ff] she[ll]'},
+ {id:'2.4',p:2,t:'tch or ch',k:'the /ch/ sound at the end',r:'Right after a short vowel, use tch. Anywhere else, use ch.',alts:['tch','ch'],
+  w:'ca[tch] pi[tch] ma[tch] fe[tch] sti[tch] ske[tch] lun[ch] bun[ch] bea[ch] coa[ch]'},
+ {id:'2.5',p:2,t:'dge or ge',k:'the /j/ sound at the end',r:'Right after a short vowel, use dge. Anywhere else, use ge.',alts:['dge','ge'],
+  w:'e[dge] bri[dge] ba[dge] ju[dge] fu[dge] le[dge] hu[ge] pa[ge] sta[ge] ca[ge]'},
+ {id:'2.6',p:2,t:'ng and nk',k:'nose sounds',r:'ng rings like a bell: sing. nk ends with a k sound: sink.',alts:['ng','nk'],
+  w:'si[ng] ki[ng] ba[nk] thi[nk] lo[ng] dri[nk] stro[ng] ju[nk] wi[ng] pi[nk]'},
+ // Phase 3
+ {id:'3.1',p:3,t:'Magic e: a_e and i_e',k:'long a and long i',r:'A silent e at the end makes the vowel say its name: tap, tape.',alts:{e:['']},
+  w:'lak[e] gam[e] tap[e] snak[e] shap[e] bit[e] kit[e] slid[e] prid[e] shin[e]'},
+ {id:'3.2',p:3,t:'Magic e: o_e, u_e, e_e',k:'long o, long u, long e',r:'The silent e works for o, u and e too: hop, hope.',alts:{e:['']},
+  w:'hop[e] bon[e] ston[e] not[e] smok[e] cub[e] tub[e] hug[e] flut[e] thes[e]'},
+ {id:'3.3',p:3,t:'Soft c and soft g',k:'c says s, g says j',r:'Before e, i or y, c says /s/ and g often says /j/.',alts:{c:['s'],g:['j']},
+  w:'[c]ity [c]ircle fa[c]e i[c]e ra[c]e pen[c]il [g]em [g]iant pa[g]e gin[g]er'},
+ // Phase 4
+ {id:'4.1',p:4,t:'ai or ay',k:'long a',r:'ai goes in the middle of a word. ay goes at the end.',alts:['ai','ay'],
+  w:'br[ai]n tr[ai]l p[ai]nt ch[ai]n sn[ai]l d[ay] pl[ay] st[ay] tr[ay] l[ay]'},
+ {id:'4.2',p:4,t:'ee or ea',k:'long e',r:'Both say long e. Picture the word: green has ee, dream has ea.',alts:['ee','ea'],
+  w:'gr[ee]n tr[ee] qu[ee]n sl[ee]p sh[ee]p [ea]t dr[ea]m l[ea]f t[ea]ch cl[ea]n'},
+ {id:'4.3',p:4,t:'y at the end',k:'the ee sound at the end',r:'At the end of a longer word, the ee sound is spelled y. Never ey.',alts:['y','ey','ee'],
+  w:'happ[y] funn[y] sunn[y] bab[y] ver[y] tast[y] hungr[y] sleep[y] lad[y] stor[y]'},
+ {id:'4.4',p:4,t:'oa or ow',k:'long o',r:'oa goes in the middle. ow goes at the end.',alts:['oa','ow'],
+  w:'b[oa]t fl[oa]t c[oa]t s[oa]p g[oa]t gr[ow] sn[ow] sl[ow] bl[ow] thr[ow]'},
+ {id:'4.5',p:4,t:'igh or y',k:'long i',r:'igh is often followed by t. A short word ending in long i uses y.',alts:{igh:['ie','i'],y:['ie','igh']},
+  w:'l[igh]t m[igh]t br[igh]t f[igh]t fl[igh]t fl[y] sk[y] cr[y] dr[y] sh[y]'},
+ {id:'4.6',p:4,t:'oo, ew, ue',k:'the oo sound as in moon',r:'oo goes in the middle. At the end, ew is most common, then ue.',alts:['oo','ew','ue'],
+  w:'m[oo]n f[oo]d sp[oo]n z[oo] dr[ew] ch[ew] f[ew] gr[ew] gl[ue] tr[ue]'},
+ {id:'4.7',p:4,t:'oo as in book',k:'the short oo sound',r:'oo can also make the short sound in book, look and took.',alts:['oo','u','ou'],
+  w:'t[oo]k l[oo]k b[oo]k c[oo]k f[oo]t g[oo]d h[oo]k st[oo]d sh[oo]k br[oo]k'},
+ {id:'4.8',p:4,t:'ou or ow',k:'the ow sound as in cow',r:'ou goes in the middle. ow goes at the end, or before n.',alts:['ou','ow'],
+  w:'m[ou]th f[ou]nd r[ou]nd cl[ou]d sh[ou]t c[ow] h[ow] n[ow] d[ow]n br[ow]n'},
+ {id:'4.9',p:4,t:'oi or oy',k:'the oy sound',r:'oi goes in the middle. oy goes at the end.',alts:['oi','oy'],
+  w:'c[oi]n p[oi]nt b[oi]l j[oi]n s[oi]l b[oy] t[oy] j[oy] enj[oy] destr[oy]'},
+ {id:'4.10',p:4,t:'au or aw',k:'the aw sound',r:'au goes in the middle. aw goes at the end, or before n or l.',alts:['au','aw'],
+  w:'s[aw] p[aw] cl[aw] dr[aw] str[aw] y[aw]n s[au]ce l[au]nch f[au]lt [au]thor'},
+ {id:'4.11',p:4,t:'augh and ough',k:'the aw sound before t',r:'aught and ought sound the same. Words from an a-word often use aught: catch, caught.',alts:['augh','ough'],
+  w:'c[augh]t t[augh]t d[augh]ter n[augh]ty th[ough]t b[ough]t br[ough]t f[ough]t s[ough]t'},
+ // Phase 5
+ {id:'5.1',p:5,t:'ar and or',k:'bossy r',r:'An r after a vowel changes its sound: car, fork.',alts:['ar','or'],
+  w:'c[ar] f[ar]m d[ar]k st[ar]t sh[ar]p f[or]k st[or]m sh[or]t c[or]n f[or]est'},
+ {id:'5.2',p:5,t:'er, ir, ur',k:'the er sound',r:'er, ir and ur sound the same. er is the most common, especially at the end.',alts:['er','ir','ur'],
+  w:'h[er] f[er]n wat[er] hung[er] b[ir]d f[ir]st g[ir]l t[ur]n b[ur]n h[ur]t'},
+ {id:'5.3',p:5,t:'or, ore, oar',k:'the or sound',r:'At the end of a word, the or sound is often ore.',alts:['ore','oar','or'],
+  w:'m[ore] st[ore] sn[ore] sc[ore] sh[ore] t[or]ch r[oar] sp[or]t c[or]d f[or]m'},
+ // Phase 6
+ {id:'6.1',p:6,t:'Closed syllables',k:'short vowel parts',r:'Split between two consonants. Each part ends in a consonant, so its vowel is short.',mode:'syl',
+  w:'rab-bit nap-kin bas-ket sun-set mag-net hel-met trum-pet pic-nic con-test sal-mon'},
+ {id:'6.2',p:6,t:'Open syllables',k:'long vowel parts',r:'A part that ends with a vowel says the vowel\'s name: ti-ger.',mode:'syl',
+  w:'ti-ger ro-bot ba-con mu-sic pa-per spi-der o-pen ze-ro si-lent hu-man'},
+ {id:'6.3',p:6,t:'Magic e parts',k:'silent e in long words',r:'Magic e still works inside long words: cup-cake, com-plete.',mode:'syl',
+  w:'in-side sun-rise cup-cake mis-take ex-plode stam-pede com-plete es-cape rep-tile in-vite'},
+ {id:'6.4',p:6,t:'Consonant + le',k:'-ble, -tle, -dle...',r:'The last part is a consonant plus le: ta-ble, stum-ble.',mode:'syl',
+  w:'ta-ble lit-tle ap-ple can-dle stum-ble jun-gle bub-ble pud-dle tur-tle peb-ble'},
+ {id:'6.5',p:6,t:'Three-part words',k:'long words',r:'Clap every part, then spell them in order. No part goes missing.',mode:'syl',
+  w:'gi-gan-tic fan-tas-tic re-mem-ber won-der-ful de-light-ful ad-ven-ture mag-net-ic ex-cel-lent dis-cov-er im-por-tant'},
+ // Phase 7
+ {id:'7.1',p:7,t:'-s or -es',k:'more than one',r:'Add es after s, x, z, ch or sh. Otherwise add s.',mode:'suf',alts:{s:['es'],es:['s']},
+  w:'fox+es dish+es bus+es lunch+es wish+es box+es cat+s frog+s bird+s tree+s'},
+ {id:'7.2',p:7,t:'-ed sounds',k:'past tense',r:'-ed can sound like t, d or id, but it is always spelled ed.',mode:'suf',alts:{ed:['t','d','id']},
+  w:'jump+ed look+ed help+ed fish+ed play+ed yell+ed rain+ed want+ed land+ed melt+ed'},
+ {id:'7.3',p:7,t:'Just add it',k:'-ly, -ful, -ness, -less',r:'Does the ending start with a consonant? Just add it. The base word stays whole.',mode:'suf',alts:{ly:['ley','ly'],ful:['full'],ness:['nes'],less:['les']},
+  w:'complete+ly>completely~completley~completly sad+ly quick+ly love+ly help+ful care+ful hope+ful kind+ness dark+ness use+less'},
+ {id:'7.4',p:7,t:'Drop the e',k:'silent e + vowel ending',r:'Does the ending start with a vowel? Drop the silent e first: taste, tasty.',mode:'suf',
+  w:'taste+y>tasty shine+y>shiny gaze+ing>gazing hope+ing>hoping smile+ing>smiling bake+ed>baked ride+ing>riding nose+y>nosy slide+ing>sliding stumble+ing>stumbling'},
+ {id:'7.5',p:7,t:'Double it (1-1-1)',k:'doubling rule',r:'One syllable, one short vowel, one last consonant? Double it before a vowel ending.',mode:'suf',
+  w:'rip+ed>ripped run+ing>running hop+ing>hopping sun+y>sunny fun+y>funny big+er>bigger sit+ing>sitting stop+ed>stopped swim+er>swimmer plan+ed>planned'},
+ {id:'7.6',p:7,t:'Change y to i',k:'consonant + y',r:'Consonant then y? Change y to i before the ending, except before -ing.',mode:'suf',
+  w:'happy+ly>happily cry+ed>cried try+ed>tried baby+es>babies carry+ed>carried berry+es>berries hungry+ly>hungrily easy+er>easier cry+ing>crying~criing play+ed>played~plaied'},
+ {id:'7.7',p:7,t:'Ending mix',k:'which rule?',r:'Ask: does the ending start with a vowel? Then check: silent e? 1-1-1? consonant + y?',mode:'mix',from:['7.3','7.4','7.5','7.6']},
+ // Phase 8
+ {id:'8.1',p:8,t:'Heart words',k:'learn the tricky part by heart',r:'Most of the word follows the rules. Learn the one tricky part by heart.',
+  w:'s[ai]d~sed fr[ie]nd~frend bec[au]se~becuz~becos d[oe]s~duz p[eo]ple~peeple ag[ai]n~agen en[ou]gh~enuf l[augh]~laf c[oul]d~cood sh[oul]d~shood'},
+ {id:'8.2',p:8,t:'Past that changes',k:'no -ed',r:'Some action words don\'t add -ed. Their vowel changes instead.',mode:'map',
+  w:'take>took~tuke~taked run>ran~runned draw>drew~drawed come>came~comed find>found~finded fall>fell~falled shake>shook~shaked grow>grew~growed eat>ate~eated write>wrote~writed'},
+ {id:'8.3',p:8,t:'aught or ought',k:'past tense',r:'Base word has an a? Use aught: catch, caught. No a? Use ought: think, thought.',mode:'map',
+  w:'catch>caught~cought~catched teach>taught~tought~teached think>thought~thaught~thinked bring>brought~braught~bringed buy>bought~baught~buyed fight>fought~faught~fighted seek>sought~saught~seeked'},
+ // Phase 9
+ {id:'9.1',p:9,t:'Hidden vowels (schwa)',k:'the lazy uh sound',r:'One vowel in a long word often sounds like uh. Say it in your spelling voice: an-i-MAL.',alts:['a','e','i','o','u'],
+  w:'anim[a]l pleas[a]nt mel[o]n less[o]n wag[o]n pil[o]t tick[e]t plan[e]t lem[o]n sev[e]n'},
+ {id:'9.2',p:9,t:'Word families',k:'a relative shows the vowel',r:'Can\'t hear the vowel? Think of a family word where you can: please, pleasant.',mode:'map',
+  w:'please>pleasant~pleasent compete>competition~compitition define>definite~definate magic>magician~magition music>musician~musition minute>minutes~minuts~minits'},
+ {id:'9.3',p:9,t:'-ous, -ful, -ic',k:'describing endings',r:'These endings have one spelling each: -ous, -ful (one l), -ic.',alts:{ous:['us','as'],ful:['full'],ic:['ick','ik']},
+  w:'humong[ous] enorm[ous] fam[ous] danger[ous] nerv[ous] joy[ful] thank[ful] gigant[ic] fantast[ic] mag[ic]'},
+ {id:'9.4',p:9,t:'-ant or -ent',k:'ending sounds the same',r:'-ant and -ent sound alike. Learn them by family: pleasant, pleasantly.',alts:['ant','ent'],
+  w:'pleas[ant] import[ant] eleph[ant] gi[ant] inst[ant] differ[ent] stud[ent] pres[ent] ev[ent] sil[ent]'},
+ {id:'9.5',p:9,t:'-tion and -ture',k:'shun and cher',r:'The shun sound at the end is usually tion. The cher sound is ture.',alts:{tion:['shun','sion'],ture:['cher','chure']},
+  w:'ac[tion] mo[tion] sta[tion] lo[tion] frac[tion] pic[ture] adven[ture] na[ture] fu[ture] crea[ture]'},
+ {id:'9.6',p:9,t:'Prefixes',k:'un-, re-, dis-, mis-, pre-',r:'A prefix joins the whole base word. Keep every letter of both: mis + spell = misspell.',mode:'suf',
+  w:'mis+spell>misspell~mispell un+natural>unnatural~unatural dis+appear>disappear~dissappear un+happy>unhappy~unhapy re+do>redo~reedo pre+view>preview~preveiw dis+agree>disagree~dissagree un+known>unknown~unown mis+step>misstep~mistep re+fill>refill~refil'},
+ {id:'9.7',p:9,t:'-able or -ible',k:'two endings, one sound',r:'Whole word in front? Usually -able: read, readable. Not a whole word? Usually -ible: terrible.',alts:['able','ible'],
+  w:'comfort[able] read[able] enjoy[able] wash[able] break[able] terr[ible] horr[ible] poss[ible] vis[ible] incred[ible]'}
+];
+const ANIMALS=['🐸','🐟','🦆','🐞','🐝','🦋','🐌','🐛','🐇','🦔','🐿️','🦊','🦉','🦌','🐻','🦝','🦡','🐺','🦫','🦦','🐢','🦎','🐍','🦜','🦚','🦩','🐧','🦭','🐬','🐳','🐙','🦀','🦞','🐠','🦈','🐊','🦒','🦓','🐘','🦏','🦛','🐪','🦘','🐨','🐼','🦥','🐒','🦁'];
+/* ---------- Added units (inserted after the unit named in `after`) ---------- */
+const EXTRA=[
+ {after:'2.6',id:'2.7',p:2,t:'Silent letters',k:'kn, wr, mb, gn',r:'Some letters are silent: the k in knee, the w in wrong, the b in lamb.',alts:{kn:['n'],wr:['r'],mb:['m'],gn:['n']},
+  w:'[kn]ock [kn]ife [kn]ee [kn]uckle [wr]ong [wr]ist [wr]eck cli[mb] thu[mb] la[mb]'},
+ {after:'2.7',id:'2.8',p:2,t:'ph and gh',k:'two ways to say f',r:'ph says f in many longer words. gh says f at the end of a few words: laugh, tough.',alts:{ph:['f'],gh:['f','ff']},
+  w:'[ph]one [ph]oto gra[ph] dol[ph]in al[ph]abet tro[ph]y lau[gh] rou[gh] tou[gh] cou[gh]'},
+ {after:'4.11',id:'4.12',p:4,t:'ie or ei',k:'i before e',r:'i before e, except after c, or when it says ay as in weigh.',alts:['ie','ei'],
+  w:'ch[ie]f f[ie]ld bel[ie]ve sh[ie]ld rec[ei]ve c[ei]ling dec[ei]ve w[ei]gh n[ei]ghbour v[ei]l'},
+ {after:'6.5',id:'6.6',p:6,t:'Four-part words',k:'long school words',r:'Clap all four parts. Spell each one, then check that none went missing.',mode:'syl',
+  w:'in-for-ma-tion ex-per-i-ment en-vi-ron-ment com-mu-ni-ty cal-cu-la-tor ed-u-ca-tion pop-u-la-tion cel-e-bra-tion de-moc-ra-cy'},
+ {after:'7.7',id:'7.8',p:7,t:'Tricky plurals',k:'f to ves, o to oes',r:'Many words ending in f change to ves. Some words ending in o add es.',mode:'suf',
+  w:'leaf+s>leaves~leafs wolf+s>wolves~wolfs knife+s>knives~knifes half+s>halves~halfs shelf+s>shelves~shelfs life+s>lives~lifes potato+s>potatoes~potatos tomato+s>tomatoes~tomatos hero+s>heroes~heros echo+s>echoes~echos'},
+ {after:'7.8',id:'7.9',p:7,t:'Contractions',k:'the apostrophe',r:"The apostrophe sits where letters were taken out: do not, don't.",mode:'map',
+  w:"do_not>don't~dont~do'nt can_not>can't~cant~ca'nt will_not>won't~wont~willn't did_not>didn't~didnt~did'nt it_is>it's~its they_are>they're~their~there you_are>you're~your we_are>we're~were would_not>wouldn't~wouldnt~would'nt let_us>let's~lets"},
+ {after:'8.3',id:'8.4',p:8,t:'Sound-alike words',k:'homophones',r:'Same sound, different spelling and meaning. The meaning tells you the spelling.',
+  w:"there~their~they're their~there~they're two~too~to too~two~to your~you're hear~here here~hear know~no whole~hole weather~whether piece~peace threw~through"},
+ {after:'9.7',id:'9.8',p:9,t:'-sion and -cian',k:'zhun and shun',r:'The zhun sound is spelled sion: vision. A person who does something is often cian: musician.',alts:{sion:['tion','shun'],cian:['tion','sion']},
+  w:'vi[sion] deci[sion] televi[sion] explo[sion] confu[sion] musi[cian] magi[cian] electri[cian] politi[cian] techni[cian]'},
+ {after:'9.8',id:'9.9',p:9,t:'-ance or -ence',k:'ending sounds the same',r:'-ance and -ence sound alike. Link them to family words: different, difference.',alts:['ance','ence'],
+  w:'import[ance] dist[ance] bal[ance] perform[ance] appear[ance] sil[ence] sci[ence] differ[ence] evid[ence] pres[ence]'}
+];
+/* ---------- Phase 10: grade 6 word parts ---------- */
+EXTRA.push(
+ {after:'9.9',id:'10.1',p:10,t:'Greek roots',k:'tele, photo, graph, scope, bio',r:'Greek parts keep their spelling: tele means far, graph means write, scope means look.',
+  w:'telescope~teliscope telephone~telefone photograph~fotograph autograph~awtograph paragraph~paragraf biology~biolagy microscope~microscop geography~jeography thermometer~thermomiter symphony~simphony'},
+ {after:'10.1',id:'10.2',p:10,t:'Latin roots 1',k:'rupt, port, spect, struct, dict',r:'Find the root first and spell it whole: inter + rupt, in + spect.',
+  w:'erupt~irupt interrupt~interupt transport~transpourt inspect~inspeckt spectator~spectater construct~construkt instruction~instruktion predict~pridict dictionary~dictionery portable~portible'},
+ {after:'10.2',id:'10.3',p:10,t:'Latin roots 2',k:'ject, tract, vid, aud, scrib',r:'Roots carry meaning: ject is throw, tract is pull, aud is hear, scrib is write.',
+  w:'project~projeckt reject~rejeckt tractor~tracter subtract~subtrackt attract~atract video~vidio audience~audiance audio~awdio describe~discribe manuscript~manuskript'},
+ {after:'10.3',id:'10.4',p:10,t:'Changing prefixes',k:'in-, im-, il-, ir-',r:'in- changes to match the next letter: im before p or m, il before l, ir before r.',mode:'suf',
+  w:'im+possible>impossible~inpossible il+legal>illegal~ilegal ir+regular>irregular~iregular in+correct>incorrect~imcorrect im+patient>impatient~inpatient ir+responsible>irresponsible~iresponsible il+logical>illogical~ilogical im+mature>immature~imature in+visible>invisible~imvisible dis+satisfied>dissatisfied~disatisfied'},
+ {after:'10.4',id:'10.5',p:10,t:'Endings on long words',k:'-ous, -ity, -ation, -ally',r:'The ending rules still work on long words: drop the e, change y to i, and -ic takes -ally.',mode:'suf',
+  w:'glory+ous>glorious~gloryous fame+ous>famous~fameous curious+ity>curiosity~curiousity able+ity>ability~ableity admire+ation>admiration~admireation imagine+ation>imagination~imagineation basic+ly>basically~basicly beauty+ful>beautiful~beautyful argue+ment>argument~arguement mystery+ous>mysterious~mysteryous'},
+ {after:'10.5',id:'10.6',p:10,t:'ch says k or sh',k:'Greek and French words',r:'In Greek words ch says k: chorus. In French words it says sh: chef.',alts:['k','sh','c'],
+  w:'[ch]orus [ch]aracter s[ch]ool stoma[ch] e[ch]o [ch]emical [ch]ef ma[ch]ine para[ch]ute bro[ch]ure'},
+ {after:'10.6',id:'10.7',p:10,t:'Grade 6 tricky words',k:'words people often misspell',r:'Find the tricky part and say it in your spelling voice: en-vi-RON-ment, gov-ERN-ment.',
+  w:'envir[on]ment~enviroment gove[rn]ment~goverment temp[er]ature~temprature sep[a]rate~seperate nec[ess]ary~neccessary~necesary defin[i]tely~definately sur[p]rise~suprise lib[r]ary~libary prob[ab]ly~probly e[s]pecially~expecially'}
+);
+/* ---------- Gold Words: high-use words, a parallel track (my own selection, grouped in sets of 10) ---------- */
+PHASES.push(
+ {n:11,name:'Gold Mine',sub:'The most-used everyday words',bank:true},
+ {n:12,name:'Gold Vault',sub:'Common school words',bank:true},
+ {n:13,name:'Grade 6 Summit',sub:'Grade 6 subject words',bank:true},
+ {n:10,name:'Root Canyon',sub:'Grade 6: roots, prefixes, tricky words'});
+PHASES.sort((a,b)=>a.n-b.n);
+const BANK_RULE='Gold words are used every day. The ♥ part is the tricky bit. Learn it by heart.';
+const BANK=[
+ // Phase 11: everyday words
+ [11,'said was they what were where because does could would'],
+ [11,'should their there your which when who why how many'],
+ [11,'any some come done one once only other another every'],
+ [11,'very again around about after before always never often sometimes'],
+ [11,'friend people really little want water thought through though although'],
+ [11,'write wrote know knew answer listen eight laugh enough tough'],
+ [11,'buy busy build guess half hour early learn heard search'],
+ [11,'until while also almost already together tomorrow today tonight yesterday'],
+ [11,'first second third colour favourite neighbour behaviour honour centre theatre'],
+ [11,'certainly different finally usually actually suddenly quietly quite quiet minute']
+];
+BANK.push(
+ // Phase 12: common school words
+ [12,'country course group young touch trouble double cousin couple southern'],
+ [12,'clothes lose loose choose chose whose woman women business island'],
+ [12,'accident address appear arrive bicycle breath breathe calendar century certain'],
+ [12,'consider continue decide difficult earth exercise experience extreme forward fruit'],
+ [12,'grammar guard guide heart height history imagine increase interest knowledge'],
+ [12,'length material medicine mention natural notice occasion opposite ordinary particular'],
+ [12,'peculiar perhaps popular position possess pressure promise purpose quarter question'],
+ [12,'recent regular reign sentence special straight strange strength suppose therefore'],
+ [12,'various weight weird soldier vegetable rhythm muscle scissors sword column'],
+ [12,'achieve awkward bargain category communicate conscious develop disastrous embarrass equipment']
+);
+BANK.push(
+ // Phase 13: grade 6 subject words
+ [13,'ecosystem energy organism habitat species predator nutrient oxygen liquid solid','Science: living things'],
+ [13,'electricity circuit conductor insulator battery volume measure surface gravity friction','Science: forces and energy'],
+ [13,'citizen council election equality responsibility parliament province provincial municipal federal','Social studies: government'],
+ [13,'treaty culture tradition ancestor heritage language region resource territory settlement','Social studies: people and places'],
+ [13,'decimal numerator denominator multiply division equation estimate perimeter triangle rectangle','Math words'],
+ [13,'narrative setting dialogue conflict resolution sequence summary opinion persuade compare','Writing words'],
+ [13,'analyze explain explanation evaluate conclusion hypothesis observe observation investigate identify','Thinking words'],
+ [13,'accept except affect effect then than desert dessert advice advise','Words that get mixed up'],
+ [13,'occurred occurrence referred preferred travelled cancelled committed forgotten written beginning','Doubling in long words'],
+ [13,'opportunity immediately independent occasionally sincerely recommend guarantee foreign exaggerate rhyme','Grade 6 challenge words']
+);
+/* Spellings that also count as right (Canadian and American) */
+const ACCEPT={nosy:['nosey'],buses:['busses'],colour:['color'],favourite:['favorite'],neighbour:['neighbor'],behaviour:['behavior'],
+ honour:['honor'],centre:['center'],theatre:['theater'],travelled:['traveled'],cancelled:['canceled'],analyze:['analyse'],dialogue:['dialog']};
+/* More sound-alikes and mix-ups: [other spellings, picture, meaning clue without the word] */
+const HOMO2={which:['witch','❓','asks you to choose'],where:['wear','📍','asks about a place'],your:["you're",'🫵','belongs to you'],
+ there:["their|they're",'📍','that place'],their:["there|they're",'👪','belongs to them'],two:['to|too','2️⃣','the number after one'],
+ too:['to|two','➕','also'],hear:['here','👂','use your ears'],here:['hear','📍','this place'],know:['no','🧠','be sure of'],
+ whole:['hole','🍕','all of it'],weather:['whether','🌦️','rain or sun'],piece:['peace','🧩','a part of something'],threw:['through','⚾','tossed'],
+ write:['right|rite','✏️','put words down'],knew:['new','🧠','was sure of'],eight:['ate','8️⃣','the number'],buy:['by|bye','🛒','pay for something'],
+ hour:['our','⏰','sixty minutes'],heard:['herd','👂','listened'],one:['won','1️⃣','the number'],through:['threw','🚪','in one side and out the other'],
+ "it's":['its','👉','it is'],"they're":['their|there','👥','they are'],"you're":['your','🫵','you are'],"we're":['were','👥','we are'],
+ whose:["who's",'❓','asks who owns it'],weight:['wait','⚖️','how heavy'],reign:['rain|rein','👑','a king or queen rules'],
+ course:['coarse','📚','a class or a path'],council:['counsel','🏛️','a group that makes decisions'],
+ desert:['','🏜️','dry sandy land'],dessert:['','🍰','a sweet treat'],accept:['','✅','say yes to'],except:['','🚫','but not'],
+ affect:['','🎯','to change something'],effect:['','💥','a result'],then:['','⏭️','next, after that'],than:['','⚖️','used to compare'],
+ advice:['','💬','a helpful suggestion'],advise:['','🗣️','to give a suggestion'],lose:['','😢','not win, or misplace'],loose:['','👖','not tight'],
+ quiet:['','🤫','not loud'],quite:['','👍','very or really'],breath:['','💨','the air you breathe'],breathe:['','🫁','take in air'],
+ choose:['','🤔','pick one now'],chose:['','✅','picked one before']};
+const STRICT_UNITS=['7.9','8.4','B28'];
+/* Wrong-but-plausible spellings for words without listed mistakes */
+const MISSPELL=[[/ie/,'ei'],[/ei/,'ie'],[/ou/,'ow'],[/ai/,'ay'],[/ee/,'ea'],[/ea/,'ee'],[/(.)\1/,'$1'],[/tion/,'shun'],[/ph/,'f'],[/wh/,'w'],
+ [/^kn/,'n'],[/^wr/,'r'],[/gh/,''],[/ck/,'k'],[/oo/,'u'],[/our$/,'er'],[/ous$/,'us'],[/ture$/,'cher'],[/y$/,'ey'],[/ly$/,'ley'],[/c(?=[ei])/,'s'],
+ [/er$/,'ur'],[/e$/,''],[/a(?=[^aeiou]+[aeiou])/,'e'],[/e(?=[^aeiou]+[aeiou])/,'i'],[/i(?=[^aeiou]+[aeiou])/,'e'],[/o(?=[^aeiou]+[aeiou])/,'u'],[/u/,'o'],[/([bdgmnprt])(?=[aeiou])/,'$1$1']];
+function misspell(w){const out=[];for(const [re,rep] of MISSPELL){const v=w.replace(re,rep);if(v!==w&&v.length>1&&!out.includes(v)&&!(ACCEPT[w]||[]).includes(v))out.push(v);if(out.length>=2)break}return out}
+BANK.forEach((b,i)=>{const n=i+1;EXTRA.push({after:i?'B'+i:'10.7',id:'B'+n,p:b[0],t:b[2]||('Gold words '+n),k:b[1].split(' ').slice(0,3).join(', ')+'…',r:BANK_RULE,bank:true,w:b[1]})});
+/* Real mistakes kids make with the most-used words */
+const WRONG={was:['wuz','waz'],how:['hou','howe'],want:['wont','whant'],half:['haf','halfe'],first:['ferst','furst'],third:['therd','thurd'],
+ length:['lenth','lengh'],rhythm:['rythm','rhythem'],sword:['sord','swoard'],then:['than','thenn'],than:['then','thann'],nosy:['nosie','nosey'.replace('ey','ee')],
+ they:['thay','thae'],what:['wat','whut'],their:['thier','thiar'],friend:['freind','frend'],because:['becuz','becaus'],does:['dose','duz'],
+ people:['peple','peopel'],really:['realy','relly'],tomorrow:['tommorow','tomorow'],beginning:['begining','beggining'],which:['wich','whitch'],
+ where:['wher','whare'],when:['wen','whenn'],would:['wuld','woud'],could:['cud','coud'],should:['shud','shoud'],once:['wunce','onse'],
+ one:['wun','wone'],every:['evry','everey'],again:['agen','agin'],always:['allways','alwas'],before:['befor','beefore'],often:['offen','oftin'],
+ sometimes:['somtimes','sumtimes'],thought:['thort','thougt'],through:['thru','throgh'],though:['tho','thow'],although:['allthough','althow'],
+ answer:['anser','ansewr'],listen:['lisen','lissen'],eight:['eigth','aight'],busy:['bizzy','buisy'],build:['bild','biuld'],guess:['gess','guss'],
+ early:['erly','urly'],learn:['lern','leern'],heard:['hurd','heared'],until:['untill','untel'],already:['allready','alredy'],
+ together:['togather','togeather'],tonight:['tonite','tonigt'],second:['secund','seccond'],usually:['usally','useually'],
+ actually:['actualy','acshually'],suddenly:['sudenly','suddenley'],certainly:['certenly','certainley'],any:['eny','aney'],many:['meny','manny'],
+ some:['sum','som'],come:['cum','com'],done:['dun','donne'],only:['onley','onlee'],other:['uther','othur'],another:['anuther','anothur'],
+ about:['abowt','abaut'],around:['arownd','aroud'],after:['aftur','affter'],never:['nevur','nevver'],very:['vary','verry'],little:['littel','litle'],
+ water:['watter','woter'],write:['rite','wright'],wrote:['rote','wroat'],know:['kno','knowe'],knew:['knewe','nue'],laugh:['laff','lauf'],
+ enough:['enuff','enuf'],tough:['tuff','tuf'],buy:['bui','buye'],hour:['houre','hower'],search:['serch','surch'],while:['wile','whyle'],
+ also:['allso','alsoe'],almost:['allmost','almoast'],today:['todday','tooday'],yesterday:['yestarday','yesterdey'],
+ different:['diffrent','diferent'],finally:['finaly','finnally'],quite:['quiet','qwite'],quiet:['quite','qwiet'],minute:['minit','minnut']};
+/* ---------- Parse entries into practice items ---------- */
+const VOWELS='aeiou';
+EXTRA.forEach(e=>{const i=UNITS.findIndex(u=>u.id===e.after);UNITS.splice(i+1,0,e)});
+function parseEntry(raw,u){
+  const [main,...wrong]=raw.split('~');
+  const it={unit:u.id,wrong:wrong.slice()};
+  if(u.mode==='map'){const [a,b]=main.split('>');it.kind='map';it.base=a.replace(/_/g,' ');it.w=b;}
+  else if(main.includes('+')){
+    const [l,res]=main.split('>');const [a,s]=l.split('+');
+    it.kind='suf';it.base=a;it.suf=s;it.w=res||a+s;
+    const naive=a+s; if(naive!==it.w) it.wrong.push(naive);
+    const alts=(u.alts&&u.alts[s])||[];
+    alts.forEach(x=>{const v=a+x; if(v!==it.w) it.wrong.push(v)});
+    if(!it.wrong.length){ // a prefix or plain join: drop a doubled letter as the trap
+      const m=it.w.match(/(.)\1/); if(m) it.wrong.push(it.w.replace(m[0],m[1]));
+    }
+  }
+  else if(u.mode==='syl'){it.kind='syl';it.syl=main.split('-');it.w=it.syl.join('');
+    const i=Math.floor(Math.random()*it.syl.length), s=it.syl[i], vi=[...s].findIndex(c=>VOWELS.includes(c));
+    if(vi>=0){const nv=[...VOWELS].filter(v=>v!==s[vi]);const alt=s.slice(0,vi)+nv[(s.length+i)%nv.length]+s.slice(vi+1);
+      it.decoy=alt; it.wrong.push(it.syl.map((x,j)=>j===i?alt:x).join(''));}
+    if(it.syl.length>2) it.wrong.push(it.syl.filter((x,j)=>j!==1).join(''));
+  }
+  else if(main.includes('[')){
+    const m=main.match(/^(.*)\[(.*)\](.*)$/);it.kind='mark';it.pre=m[1];it.g=m[2];it.post=m[3];it.w=m[1]+m[2]+m[3];
+    let alts=[];
+    if(u.mode==='drop'){const g=it.g;alts=[g.slice(1),g.slice(0,-1),g.split('').reverse().join('')];}
+    else if(Array.isArray(u.alts)) alts=u.alts.filter(a=>a!==it.g);
+    else if(u.alts) alts=u.alts[it.g]||[];
+    it.galts=[...new Set(alts)].filter(a=>a!==it.g);
+    it.galts.forEach(a=>{const v=it.pre+a+it.post; if(v!==it.w) it.wrong.push(v)});
+  }
+  else {it.kind='word';it.w=main;}
+  if(!it.wrong.length) it.wrong=(WRONG[it.w]||[]).slice();
+  if(!it.wrong.length) it.wrong=misspell(it.w);
+  it.wrong=[...new Set(it.wrong)].filter(x=>x&&x!==it.w&&!(ACCEPT[it.w]||[]).includes(x));
+  it.key=u.id+':'+it.w;
+  return it;
+}
+UNITS.forEach(u=>{u.items=u.w?u.w.split(/\s+/).map(e=>parseEntry(e,u)):[];});
+UNITS.forEach(u=>{if(u.mode==='mix') u.items=u.from.flatMap(id=>UNITS.find(x=>x.id===id).items);});
+const UNIT_BY_ID=Object.fromEntries(UNITS.map(u=>[u.id,u]));
+function itemByKey(k){const [uid]=k.split(':');const u=UNIT_BY_ID[uid]||(uid==='my'?myUnit():null);return u&&u.items.find(i=>i.key===k)}
+function myUnit(){return {id:'my',p:0,t:'My story words',k:'words from her own writing',r:'Look closely at every letter.',
+  items:(S.custom||[]).map(c=>({unit:'my',kind:'word',w:c.w,wrong:c.x?[c.x]:[],key:'my:'+c.w}))}}
+
+/* ---------- State, saving and syncing ---------- */
+const LKEY='spellTrail.v2';
+const dayNum=(d=new Date())=>Math.floor((d.getTime()-d.getTimezoneOffset()*6e4)/864e5);
+const dayLabel=n=>new Date(n*864e5).toISOString().slice(0,10);
+function blank(){return {v:2,updatedAt:0,words:{},units:{},fish:0,gems:0,days:{},streak:{last:0,count:0},placement:{done:false,phase:1},custom:[],sheetId:'1bKJ40B54my4jpyPq0SiJErQDo1D67qNkJ_zUd0XAbqo',sheetUrl:'',voice:true,log:[]}}
+/* Students: each has its own saved progress. The first student keeps the original key, so old progress carries over. */
+const RKEY='spellTrail.roster', SHARED=['sheetId','sheetUrl','voice','voiceName','rate'];
+let ROSTER={students:[{id:'main',name:''}],current:'main'};
+try{const r=JSON.parse(localStorage.getItem(RKEY)||'null'); if(r&&r.students&&r.students.length) ROSTER=r;}catch(e){}
+const skey=id=>id==='main'?LKEY:LKEY+'.'+id, sdoc=id=>'progress/'+id;
+const student=()=>ROSTER.students.find(x=>x.id===ROSTER.current)||ROSTER.students[0];
+const studentName=()=>student().name||'Student 1';
+function saveRoster(){try{localStorage.setItem(RKEY,JSON.stringify(ROSTER))}catch(e){}}
+function readStudent(id){try{const l=JSON.parse(localStorage.getItem(skey(id))||'null'); if(l&&l.v===2) return Object.assign(blank(),l);}catch(e){} return null}
+let S=readStudent(student().id)||blank();
+function switchStudent(id){const keep={};SHARED.forEach(k=>keep[k]=S[k]);
+  ROSTER.current=id;saveRoster();S=readStudent(id)||Object.assign(blank(),keep);SHARED.forEach(k=>S[k]=keep[k]);
+  if(typeof pickVoice==='function') pickVoice(); pullDB();}
+function addStudent(name){const id='s'+Date.now().toString(36);ROSTER.students.push({id,name});saveRoster();return id}
+let DB=null, SYNC='device', MCP=null, DL=null;
+let writeChain=Promise.resolve(), saveTimer=null;
+function save(now){
+  S.updatedAt=Date.now();
+  try{localStorage.setItem(skey(student().id),JSON.stringify(S))}catch(e){}
+  if(!DB) return;
+  clearTimeout(saveTimer);
+  const go=()=>{writeChain=writeChain.then(()=>DB.doc(sdoc(student().id)).set(JSON.parse(JSON.stringify(S)))).then(()=>{SYNC='account'},()=>{SYNC='device'})};
+  if(now) go(); else saveTimer=setTimeout(go,1500);
+}
+const SHEET_HEADER=['Student','Date','Time','Type','Phase','Unit','Score (first try)','Fish','Missed words','Unit status','Gems'];
+async function logRound(row){
+  S.log=(S.log||[]); S.log.push(row); if(S.log.length>400) S.log=S.log.slice(-400);
+  row=[studentName(),...row];
+  if(DB){const d=DB.doc('log/'+row[1]);
+    writeChain=writeChain.then(async()=>{const s=await d.get();const rows=(s.exists&&s.data().rows)||[];rows.push(row);await d.set({rows});}).catch(()=>{});}
+  const inClaude=!!(window.claude&&window.claude.use);
+  if(!inClaude&&S.sheetUrl){
+    // Google Apps Script web app (works when hosted outside Claude, e.g. GitHub Pages)
+    try{await fetch(S.sheetUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({tab:'Spelling',header:SHEET_HEADER,row})});S.sheetOk=true;}
+    catch(e){S.sheetOk=false;}
+  } else if(MCP&&S.sheetId){
+    try{await MCP.callTool('Google Sheets','append_values',{spreadsheetId:S.sheetId,range:'Spelling!A1',values:[row]});S.sheetOk=true;}
+    catch(e){S.sheetOk=false;}
+  }
+}
+async function connect(){
+  if(!window.claude||!window.claude.use) return;
+  try{
+    const db=await window.claude.use('db');
+    if(db){
+      DB=db;
+      try{const rs=await db.doc('roster/main').get();const r=rs.exists&&rs.data();
+        if(r&&r.students&&(r.updatedAt||0)>(ROSTER.updatedAt||0)){ROSTER=Object.assign({},r,{current:ROSTER.current});if(!student())ROSTER.current=ROSTER.students[0].id;saveRoster();}
+        else if(ROSTER.updatedAt) await db.doc('roster/main').set(JSON.parse(JSON.stringify(ROSTER)));}catch(e){}
+      await pullDB(); if(!RUN&&(SCREEN==="home"||SCREEN==="who")) route();
+      SYNC='account';
+    }
+  }catch(e){SYNC='device'}
+  try{MCP=await window.claude.use('mcp')}catch(e){}
+  try{DL=await window.claude.use('downloads')}catch(e){}
+}
+
+async function pullDB(){
+  if(!DB) return; const id=student().id;
+  try{const snap=await DB.doc(sdoc(id)).get();
+    if(snap.exists){const r=snap.data(); if(r&&r.v===2&&(r.updatedAt||0)>(S.updatedAt||0)&&student().id===id){S=Object.assign(blank(),JSON.parse(JSON.stringify(r)));try{localStorage.setItem(skey(id),JSON.stringify(S))}catch(e){}}
+      else if((S.updatedAt||0)>(r.updatedAt||0)) save(true);}
+    else if(S.updatedAt) save(true);}catch(e){}
+}
+function syncRoster(){ROSTER.updatedAt=Date.now();saveRoster();if(DB)writeChain=writeChain.then(()=>DB.doc('roster/main').set(JSON.parse(JSON.stringify(ROSTER)))).catch(()=>{})}
+/* ---------- Spaced review (5 boxes) ---------- */
+const GAPS=[0,1,2,4,7,14];
+function ws(k){return S.words[k]||(S.words[k]={b:0,due:0,s:0,r:0})}
+function mark(it,ok){
+  const w=ws(it.key), t=dayNum(); w.s++;
+  if(ok){w.r++;w.b=Math.min(5,w.b+1);} else {w.b=0;}
+  w.due=t+GAPS[w.b]; w.last=t;
+}
+function dueKeys(){const t=dayNum();return Object.entries(S.words).filter(([k,w])=>w.s>0&&w.due<=t&&itemByKey(k)).sort((a,b)=>a[1].b-b[1].b||a[1].due-b[1].due).map(([k])=>k)}
+function unitState(id){return S.units[id]||{}}
+function unitOpen(u){
+  if(!u.p) return true;
+  if(unitState(u.id).passed) return true;
+  const track=UNITS.filter(x=>!!x.bank===!!u.bank), i=track.indexOf(u);
+  return i===0||!!unitState(track[i-1].id).passed;
+}
+function currentUnit(){return UNITS.find(u=>!u.bank&&!unitState(u.id).passed)||null}
+function bankUnit(){return UNITS.find(u=>u.bank&&!unitState(u.id).passed)||null}
+function phaseUnits(p){return UNITS.filter(u=>u.p===p)}
+function phaseDone(p){return phaseUnits(p).every(u=>unitState(u.id).passed)}
+function today(){const t=dayNum();return S.days[t]||(S.days[t]={fish:0,rounds:0,right:0,total:0})}
+const GOAL=10;
+/* ---------- Teaching extras: sentences, roots, heart parts, look-alike families ---------- */
+/* One short sentence per stop. Used for the treasure hunt (find the mistake) and for dictation. */
+const SENT={'1.1':'The cat sat on a log by the pond.','1.2':'A red bug sat in the sun.','1.3':'The frog sat on a spot by the tent.',
+ '2.1':'The fish swam by the ship.','2.2':'A duck sat on the rock in the dark.','2.3':'The bell fell off the hill.',
+ '2.4':'The dog can catch it and fetch it.','2.5':'A huge cage sat on the bridge.','2.6':'The king can sing a long song.',
+ '2.7':'I hurt my thumb and my wrist.','2.8':'We laugh at the photo.','3.1':'A snake hid by the lake.',
+ '3.2':'The dog hid a bone by the stone.','3.3':'The giant ate ice in the city.','4.1':'A snail went up the trail all day.',
+ '4.2':'The sheep sleep under a green tree.','4.3':'The sleepy baby is very happy.','4.4':'The goat will float in the boat.',
+ '4.5':'The bright light lit up the sky.','4.6':'A few kids grew food at the zoo.','4.7':'Look at the good book I took.',
+ '4.8':'How did the brown cow get down?','4.9':'The boy found a coin in the soil.','4.10':'The cat put its paw in the sauce.',
+ '4.11':'Dad taught me what he thought.','4.12':'I believe the chief has a shield.','5.1':'The car got stuck in the dark forest.',
+ '5.2':'Her bird can turn in the water.','5.3':'We heard a roar from the shore.','6.1':'The rabbit hid in a basket at sunset.',
+ '6.2':'The robot made music for the tiger.','6.3':'It was a mistake to invite the reptile inside.','6.4':'The turtle sat on a pebble in the puddle.',
+ '6.5':'Remember the fantastic adventure we had.','6.6':'Our community did an experiment for the environment.','7.1':'The foxes ran past the boxes of dishes.',
+ '7.2':'We jumped and played until it rained.','7.3':'She quickly made a helpful map.','7.4':'We were smiling and riding in the sun.',
+ '7.5':'The swimmer was running and hopping.','7.6':'The babies cried, so we carried them.','7.7':'We stopped running and happily baked a cake.',
+ '7.8':'The wolves ran through the leaves.','7.9':"I can't come, but they're sure we're fine.",'8.1':'My friend said we could go again.',
+ '8.2':'I took the map and wrote a note.','8.3':'I thought I caught a fish, but it fought.','8.4':'Their dog is over there by the piece of wood.',
+ '9.1':'The pilot had a pleasant lesson.','9.2':'The magician and the musician took ten minutes.','9.3':'The famous elephant was enormous and joyful.',
+ '9.4':'The giant elephant gave the student a present.','9.5':'Nature has a creature in every picture.','9.6':'The rabbit will disappear and we will be unhappy.',
+ '9.7':'It is possible the bed is comfortable.','9.8':'The magician made a decision on television.','9.9':'Good science needs evidence.',
+ '10.1':'Take a photograph with the telescope.','10.2':'Please do not interrupt when I predict.','10.3':'The audience watched a video of a tractor.',
+ '10.4':'It was impossible to find the invisible map.','10.5':'The imagination of the mysterious author was beautiful.','10.6':'The chef had a stomach ache at school.',
+ '10.7':'The library is probably a separate building.',
+ B1:'They said it was where we could go.',B2:'Which of their friends is there?',B3:'Some come once, and only one has done it.',
+ B4:'We always go before school, but not very often.',B5:'My friend thought the water was really cold.',B6:'I know the answer, so listen to me write it.',
+ B7:'I guess we can search for an hour.',B8:'We will search until tonight and go home tomorrow.',B9:'My favourite colour is green.',
+ B10:'We were quiet, but it was quite different.',B11:'My young cousin got in trouble.',B12:'Do not lose the clothes you choose.',
+ B13:'We will arrive at the address on my bicycle.',B14:'It is difficult to decide on the fruit.',B15:'Imagine the guard had a kind heart.',
+ B16:'Did you notice the natural material?',B17:'Perhaps the question has a purpose.',B18:'Write a special sentence about the strange queen.',
+ B19:'The soldier used a muscle to lift the weight.',B20:'It felt awkward to embarrass my friend.',B21:'Every organism needs energy and oxygen.',
+ B22:'Electricity flows around a circuit.',B23:'Each citizen can vote in the election.',B24:'Our culture and language are part of our heritage.',
+ B25:'Estimate the perimeter of the triangle.',B26:'The narrative has a setting and a conflict.',B27:'Observe, then explain your conclusion.',
+ B28:'I accept all of them except one.',B29:'It occurred at the beginning of the story.',B30:'I sincerely recommend a foreign book.'};
+const words=s=>s.toLowerCase().replace(/[’‘`]/g,"'").match(/[a-z']+/g)||[];
+function sentTargets(u){const s=SENT[u.id];if(!s)return [];const ws=words(s);return u.items.filter(it=>ws.includes(it.w.toLowerCase()))}
+
+/* Greek and Latin roots for Root Canyon */
+const ROOTS=[['tele','far'],['photo','light'],['graph','write'],['scope','look'],['bio','life'],['logy','study of'],['micro','small'],['geo','earth'],
+ ['therm','heat'],['meter','measure'],['phon','sound'],['auto','self'],['para','beside'],['rupt','break'],['port','carry'],['spect','look'],
+ ['struct','build'],['dict','say'],['ject','throw'],['tract','pull'],['vid','see'],['aud','hear'],['scrib','write'],['script','write'],['manu','hand']];
+const ROOT_UNITS=['10.1','10.2','10.3'];
+function rootOf(w){let best=null;for(const [r,m] of ROOTS){const i=w.indexOf(r);if(i>=0&&(!best||r.length>best.r.length))best={r,m,i}}return best}
+
+/* Gold words: the tricky part to learn by heart (the rest follows the usual rules) */
+const HEART={said:'ai',was:'a',they:'ey',what:'a',were:'ere',where:'ere',because:'au',does:'oe',could:'oul',would:'oul',should:'oul',
+ their:'ei',there:'ere',your:'our',which:'wh',when:'wh',who:'wh',why:'wh',many:'a',any:'a',some:'ome',come:'ome',done:'one',one:'o',once:'o',
+ other:'o',another:'o',again:'ai',always:'al',often:'t',friend:'ie',people:'eo',want:'a',water:'a',thought:'ough',through:'ough',though:'ough',
+ although:'ough',write:'w',wrote:'w',know:'k',knew:'k',answer:'w',listen:'t',eight:'eigh',laugh:'augh',enough:'ough',tough:'ough',buy:'u',busy:'u',
+ build:'u',guess:'u',half:'l',hour:'h',early:'ear',learn:'ear',heard:'ear',search:'ear',until:'l',while:'wh',almost:'al',already:'al',
+ tomorrow:'rr',tonight:'igh',first:'ir',second:'o',third:'ir',colour:'our',favourite:'our',neighbour:'eigh',behaviour:'our',honour:'h',
+ centre:'re',theatre:'re',certainly:'er',different:'ere',finally:'ll',actually:'ll',suddenly:'dd',quietly:'ie',quite:'te',quiet:'et',minute:'i',
+ country:'ou',course:'ou',group:'ou',young:'ou',touch:'ou',trouble:'ou',double:'ou',cousin:'ou',couple:'ou',southern:'ou',lose:'o',loose:'oo',
+ choose:'oo',whose:'wh',woman:'o',women:'o',business:'usi',island:'s',accident:'cc',address:'dd',appear:'pp',arrive:'rr',bicycle:'y',
+ breath:'ea',breathe:'athe',calendar:'ar',century:'c',certain:'ai',decide:'c',difficult:'ff',earth:'ear',exercise:'c',experience:'ence',
+ forward:'ar',fruit:'ui',grammar:'ar',guard:'u',guide:'u',heart:'ea',height:'eigh',imagine:'ine',increase:'ea',knowledge:'k',length:'g',
+ medicine:'c',notice:'ice',occasion:'cc',opposite:'pp',ordinary:'ary',particular:'ar',peculiar:'iar',popular:'ar',possess:'ss',pressure:'ss',
+ promise:'ise',purpose:'ose',quarter:'ar',question:'tion',recent:'c',regular:'ar',reign:'g',sentence:'ence',special:'ci',straight:'aigh',
+ strength:'g',suppose:'pp',various:'i',weight:'eigh',weird:'ei',soldier:'di',vegetable:'eta',rhythm:'h',muscle:'sc',scissors:'sc',sword:'w',
+ column:'n',achieve:'ie',awkward:'kw',bargain:'ai',communicate:'mm',conscious:'sc',develop:'op',disastrous:'tr',embarrass:'rr',
+ occurred:'rr',referred:'rr',preferred:'rr',committed:'tt',beginning:'nn',opportunity:'pp',immediately:'mm',occasionally:'cc',
+ sincerely:'ely',recommend:'mm',guarantee:'u',foreign:'eig',exaggerate:'gg',rhyme:'h'};
+function heartHTML(w){const h=HEART[w];if(!h)return null;const i=w.indexOf(h);if(i<0)return null;
+ return `${esc(w.slice(0,i))}<b class="heart">${esc(h)}</b>${esc(w.slice(i+h.length))}`}
+
+/* Look-alike families: in Alberta, aw and short o often sound the same, so these are learned by look */
+const FAM={'4.10':[['aw','saw paw claw draw straw yawn'],['au','sauce launch fault author']],
+ '4.11':[['aught','caught taught daughter naughty'],['ought','thought bought brought fought sought']],
+ '8.3':[['aught','caught taught'],['ought','thought brought bought fought sought']]};
+const FAM_RULE={'4.10':'Learn these by look. aw sits at the end, or before n or l. au sits in the middle.',
+ '4.11':'Learn these by look. aught: caught, taught, daughter. ought: thought, bought, brought.',
+ '8.3':'Learn these by look. Only a few use aught: caught, taught. Most use ought.'};
+Object.entries(FAM_RULE).forEach(([id,r])=>{const u=UNIT_BY_ID[id];if(u)u.r=r});
+/* ---------- Helpers ---------- */
+const app=document.getElementById('app');
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const $=id=>document.getElementById(id);
+const IN_CLAUDE=!!(window.claude&&window.claude.use);
+const HAS_TTS='speechSynthesis' in window;
+let VOICE=null;
+function voiceScore(v){const n=v.name;let sc=0;
+  if(/natural|neural|online/i.test(n))sc+=50; if(/premium|enhanced|siri/i.test(n))sc+=40; if(/^google/i.test(n))sc+=30;
+  if(/aria|jenny|ava|samantha|allison|clara|libby|sonia|emma|michelle/i.test(n))sc+=15;
+  if(/^en[-_](US|CA)/i.test(v.lang))sc+=10; else if(/^en[-_](GB|AU|IE|NZ)/i.test(v.lang))sc+=6;
+  if(/compact|espeak|zira|david|mark|fred|albert|bad|bells|boing|bubbles|cellos|whisper|zarvox|trinoids|jester|organ|superstar|wobble|junior|ralph|kathy|grandma|grandpa|rocko|shelley|eddy|flo|reed|sandy/i.test(n))sc-=40;
+  return sc}
+function englishVoices(){try{return speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang)).sort((a,b)=>voiceScore(b)-voiceScore(a))}catch(e){return []}}
+function pickVoice(){const vs=englishVoices();VOICE=(S.voiceName&&vs.find(v=>v.name===S.voiceName))||vs[0]||null}
+if(HAS_TTS){pickVoice();try{speechSynthesis.onvoiceschanged=pickVoice}catch(e){}}
+const speaking=()=>HAS_TTS&&S.voice!==false;
+function say(t){if(!speaking())return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.rate=S.rate||.9;u.pitch=1;u.lang='en-US';if(VOICE)u.voice=VOICE;speechSynthesis.speak(u)}catch(e){}}
+const ICON_SPEAK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/></svg>';
+const FISH='<svg viewBox="0 0 40 24" aria-hidden="true"><path d="M2 12c6-9 20-10 28 0-8 10-22 9-28 0z" fill="var(--salmon)"/><path d="M29 12l9-7v14z" fill="var(--salmon)"/><circle cx="10" cy="10" r="2" fill="var(--surface)"/></svg>';
+function bear(){return `<svg class="bear" viewBox="0 0 120 104" aria-hidden="true"><circle cx="26" cy="26" r="17" fill="var(--fur)"/><circle cx="94" cy="26" r="17" fill="var(--fur)"/><circle cx="26" cy="26" r="8" fill="var(--fur-light)"/><circle cx="94" cy="26" r="8" fill="var(--fur-light)"/><ellipse cx="60" cy="56" rx="44" ry="42" fill="var(--fur)"/><ellipse cx="60" cy="68" rx="20" ry="16" fill="var(--fur-light)"/><ellipse cx="60" cy="60" rx="7" ry="5" fill="var(--nose)"/><circle cx="43" cy="46" r="4.5" fill="var(--nose)"/><circle cx="77" cy="46" r="4.5" fill="var(--nose)"/><path d="M50 70q10 9 20 0" stroke="var(--nose)" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`}
+function speakBtn(t,label){return speaking()?`<button class="speak" data-say="${esc(t)}">${ICON_SPEAK}${label||'Hear it'}</button>`:''}
+function wire(){app.querySelectorAll('[data-say]').forEach(b=>b.onclick=()=>say(b.dataset.say))}
+/* Sound-alike words: a picture cue says which meaning we want; the other spelling is not counted as wrong */
+const HOMO={sun:['son','☀️','shines in the sky'],red:['read','🔴','a colour'],taught:['taut','🧑‍🏫','what a teacher did'],
+ ate:['eight','🍽️','had a meal'],wrote:['rote','✏️','put words on paper'],lesson:['lessen','📚','time to learn at school'],
+ cord:['chord','🔌','a long cable'],rained:['reigned|reined','🌧️','water fell from clouds'],might:['mite','🤔','maybe'],
+ berries:['buries','🫐','small fruits'],bite:['byte','🍎','use your teeth'],boy:['buoy','👦','not a girl'],
+ beach:['beech','🏖️','sand by the sea'],story:['storey','📖','a tale to read'],turn:['tern','↪️','go around'],
+ lay:['lei','🛌','put down flat'],pride:['pried','🦁','a group of lions'],caught:['','⚾','got the ball'],
+ tray:['trey','🍽️','carries plates'],shore:['','🌊','land by the sea'],sauce:['source','🍝','goes on pasta']};
+Object.assign(HOMO,HOMO2);
+const homoOther=(it,v)=>{const h=HOMO[it.w];return !STRICT_UNITS.includes(it.unit)&&h&&h[0]&&h[0].split('|').includes(v)};
+function cueHTML(it){const h=HOMO[it.w];return h?`<div class="cue"><span class="cuei">${h[1]}</span>${esc(h[2])}</div>`:''}
+function sayItem(it){const h=HOMO[it.w];say(h?it.w+'. '+h[2]+'. '+it.w:it.w)}
+const unitLabel=u=>u.id+' '+u.t;
+const animalFor=u=>ANIMALS[UNITS.indexOf(u)%ANIMALS.length];
+function streakNow(){const t=dayNum();return (S.streak.last===t||S.streak.last===t-1)?S.streak.count:0}
+function display(it){
+  if(it.kind==='mark') return `${esc(it.pre)}<b class="hl">${esc(it.g)}</b>${esc(it.post)}`;
+  if(it.kind==='syl') return it.syl.map(esc).join('<span class="dotsep">·</span>');
+  if(it.kind==='suf') return `${esc(it.base)} + ${esc(it.suf)} → <b class="hl">${esc(it.w)}</b>`;
+  if(it.kind==='map') return `${esc(it.base)} → <b class="hl">${esc(it.w)}</b>`;
+  return heartHTML(it.w)||esc(it.w);
+}
+function download(name,text,type){
+  if(DL){DL.save({filename:name,data:text}).catch(()=>{});return}
+  try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:type||'text/plain'}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}catch(e){}
+}
+let OPEN_PHASE=null, RUN=null, SCREEN='', PICKED=false;
+function route(){RUN=null;(ROSTER.students.length>1&&!PICKED)?who():home()}
+function who(){
+  SCREEN='who';
+  app.innerHTML=`<div class="hero">${bear()}<div class="herotext"><h1>Who's practising?</h1></div></div>
+   <div class="names">${ROSTER.students.map(x=>`<button class="btn name" data-id="${esc(x.id)}">${esc(x.name||'Student 1')}</button>`).join('')}</div>`;
+  app.querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>{PICKED=true;if(b.dataset.id!==student().id)switchStudent(b.dataset.id);home()});
+  if(speaking()) setTimeout(()=>say("Who's practising?"),300);
+  window.scrollTo(0,0);
+}
+
+/* ---------- Home: one big next step, little else ---------- */
+function nextAction(){
+  const cur=currentUnit(), due=dueKeys().length;
+  if(!S.placement.done&&!UNITS.some(u=>unitState(u.id).passed)) return {label:'Start',cap:'Quick check',go:()=>startCheck(1)};
+  if((due>=3&&!today().reviews)||due>=15) return {label:'Go!',cap:'Warm-up review',go:startReview};
+  const bk=bankUnit();
+  if(bk&&(S.lastTrack==='trail'||!cur)) return {label:'Go!',cap:'Gold words',go:()=>intro(bk.id)};
+  if(cur) return {label:'Go!',cap:cur.t,go:()=>intro(cur.id)};
+  if(due) return {label:'Go!',cap:'Review',go:startReview};
+  return null;
+}
+function home(){
+  const td=today(), f=td.fish, pct=Math.min(100,Math.round(f/GOAL*100)), st=streakNow(), nx=nextAction();
+  const friends=UNITS.filter(u=>unitState(u.id).passed).length, multi=ROSTER.students.length>1;
+  const fresh=!S.placement.done&&!friends; SCREEN='home';
+  app.innerHTML=`
+   <div class="hero">${bear()}<div class="herotext"><h1>${multi?esc(studentName()):'Spelling Trail'}</h1>
+     <div class="row"><span class="fishcount">${FISH}${S.fish}</span><span class="fishcount"><span class="gem"></span>${S.gems}</span><span class="fishcount">${(S.friends||[]).slice(-1)[0]||'🐾'}${friends}</span>${st?`<span class="streak">${st} day${st>1?'s':''}</span>`:''}</div></div></div>
+   <section class="card today">
+     <div class="goal"><div class="bar big"><i style="width:${pct}%"></i></div><span class="fishcount small2">${FISH}${Math.min(f,GOAL)}/${GOAL}</span></div>
+     ${nx?`<button class="btn go" id="go"><span>${nx.label}</span><span class="cap">${esc(nx.cap)}</span></button>`:'<p class="center-t">Trail complete!</p>'}
+     ${fresh?'<button class="link" id="skip">Skip the check</button>':''}
+   </section>
+   <div class="row center-row">${multi?'<button class="link" id="who">Switch</button>':''}<button class="link" id="grown">Grown-ups</button></div>`;
+  if(nx) $('go').onclick=nx.go;
+  if(fresh) $('skip').onclick=()=>{S.placement.done=true;save();home()};
+  $('grown').onclick=grownups; if(multi) $('who').onclick=who;
+  window.scrollTo(0,0);
+}
+function trailMap(){
+  const cur=currentUnit(); if(OPEN_PHASE===null) OPEN_PHASE=cur?cur.p:9;
+  SCREEN='map';
+  app.innerHTML=`<div class="top"><button class="back" id="back" aria-label="Back">←</button><h2>Choose a stop</h2></div>
+   <div class="phases">${PHASES.map(ph=>{const div=ph.n===11?'<h3 class="divider">Gold words</h3>':'';
+     const us=phaseUnits(ph.n), done=us.filter(u=>unitState(u.id).passed).length, open=OPEN_PHASE===ph.n;
+     return `${div}<div class="phase ${open?'open':''}"><button class="phead" data-ph="${ph.n}" aria-expanded="${open}">
+       <span class="pnum ${done===us.length?'done':''}">${done===us.length?'✓':ph.n}</span>
+       <span class="ptext"><b>${esc(ph.name)}</b></span><span class="small muted tab">${done}/${us.length}</span></button>
+       ${open?`<ul class="units">${us.map(u=>{const s=unitState(u.id),ok=unitOpen(u);
+         return `<li><button class="unit ${s.mastered?'mastered':s.passed?'passed':ok?'open':'locked'}" data-u="${u.id}" ${ok?'':'disabled'}>
+           <span class="udot">${s.mastered?'★':s.passed?'✓':''}</span><span class="utext"><b>${esc(u.t)}</b></span>
+           ${s.passed?`<span class="ani">${s.friend||animalFor(u)}</span>`:''}</button></li>`}).join('')}</ul>`:''}</div>`}).join('')}
+   ${S.custom&&S.custom.length?`<div class="phase"><button class="phead" id="mywords"><span class="pnum">★</span><span class="ptext"><b>My words</b></span></button></div>`:''}
+   </div>`;
+  $('back').onclick=grownups;
+  if($('mywords')) $('mywords').onclick=()=>intro('my');
+  app.querySelectorAll('[data-ph]').forEach(b=>b.onclick=()=>{const n=+b.dataset.ph;OPEN_PHASE=OPEN_PHASE===n?0:n;trailMap()});
+  app.querySelectorAll('[data-u]').forEach(b=>b.onclick=()=>intro(b.dataset.u));
+  window.scrollTo(0,0);
+}
+function chest(){
+  const got=UNITS.filter(u=>unitState(u.id).passed);
+  app.innerHTML=`<div class="top"><button class="back" id="back" aria-label="Back">←</button><h2>Friends</h2></div>
+   <section class="card"><div class="friends">${got.map(u=>`<span class="friend">${animalFor(u)}</span>`).join('')||'<p class="muted">Finish a stop to find a friend.</p>'}</div>
+   <div class="pieces big" aria-label="Map pieces">${PHASES.filter(p=>!p.bank).map(p=>`<i class="${phaseDone(p.n)?'got':''}"></i>`).join('')}</div></section>`;
+  $('back').onclick=home; window.scrollTo(0,0);
+}
+
+/* ---------- Unit intro: one rule, a few words ---------- */
+function intro(id){
+  const u=id==='my'?myUnit():UNIT_BY_ID[id]; if(!u||!u.items.length) return home();
+  const ex=u.mode==='mix'?shuffle(u.items).slice(0,4):u.items.slice(0,4);
+  app.innerHTML=`<div class="top"><button class="back" id="back" aria-label="Back">←</button><h2>${esc(u.t)}</h2></div>
+   <section class="card">
+     <div class="rule"><p class="rtext">${esc(u.r)}</p>${speakBtn(u.r,'Hear it')}</div>
+     ${FAM[u.id]?`<div class="fams">${FAM[u.id].map(([k,ws])=>`<div class="fam"><b class="hl famk">${esc(k)}</b>${ws.split(' ').map(w=>`<button class="ex" data-say="${esc(w)}">${esc(w).replace(esc(k),`<b class="hl">${esc(k)}</b>`)}</button>`).join('')}</div>`).join('')}</div>`
+     :`<div class="examples">${ex.map(it=>`<button class="ex" data-say="${esc(it.w)}">${display(it)}</button>`).join('')}</div>`}
+   </section>
+   <button class="btn block" id="go">Start</button>`;
+  SCREEN='intro'; $('back').onclick=home; $('go').onclick=()=>startUnit(u); wire(); window.scrollTo(0,0);
+  if(speaking()) setTimeout(()=>say(u.r),300);
+}
+
+/* ---------- Rounds ---------- */
+const PLAN=['choose','spell','hunt','spell','choose','spell'];
+function qType(it,pref){
+  if(pref==='hunt') return it.wrong.length?'hunt':'spell';
+  if(pref==='choose'&&ROOT_UNITS.includes(it.unit)&&rootOf(it.w)) return 'root';
+  if(pref==='choose'){if(it.kind==='mark'&&it.galts&&it.galts.some(a=>a))return 'gap';if(it.kind==='syl')return 'build';if(it.kind==='suf')return 'join';if(it.kind==='map')return 'base';pref='pick'}
+  if(pref==='pick') return it.wrong.length?'pick':'spell';
+  return 'spell';
+}
+function startUnit(u){
+  const items=shuffle(u.items).sort((a,b)=>{const A=S.words[a.key]||{b:0,s:0},B=S.words[b.key]||{b:0,s:0};return A.b-B.b||A.s-B.s}).slice(0,6);
+  const q=shuffle(items).map((it,i)=>({it,type:qType(it,PLAN[i%PLAN.length])}));
+  if(speaking()&&u.p&&SENT[u.id]&&sentTargets(u).length) q.push({type:'dict',bonus:true,it:{key:'dict'}});
+  RUN={kind:'unit',unit:u,q,i:0,fish:0,first:{},n:q.length-(q[q.length-1].bonus?1:0)}; showQ();
+}
+function startReview(){
+  const keys=dueKeys().slice(0,6); if(!keys.length) return home();
+  const q=keys.map(k=>({it:itemByKey(k),type:'spell'}));
+  RUN={kind:'review',q,i:0,fish:0,first:{},n:q.length}; showQ();
+}
+function startCheck(p){
+  const us=phaseUnits(p).filter(u=>u.mode!=='mix');
+  const q=us.map(u=>({it:shuffle(u.items)[0],type:speaking()?'spell':'pick',check:true}));
+  RUN={kind:'check',phase:p,q,i:0,fish:0,first:{},n:q.length}; showQ();
+}
+function topBar(){
+  const pct=Math.round(RUN.i/RUN.q.length*100);
+  return `<div class="top"><button class="back" id="back" aria-label="Leave this round">←</button><div class="bar"><i style="width:${pct}%"></i></div><span class="fishcount">${FISH}${RUN.fish}</span></div>`;
+}
+function showQ(){
+  if(RUN.i>=RUN.q.length) return endRound();
+  const q=RUN.q[RUN.i];
+  SCREEN='q'; ({gap:qGap,pick:qPick,build:qBuild,join:qJoin,base:qBase,spell:qSpell,copy:qCopy,hunt:qHunt,root:qRoot,dict:qDict})[q.type](q);
+  $('back').onclick=home; wire(); window.scrollTo(0,0);
+}
+function ruleOf(it){const u=it.unit==='my'?myUnit():UNIT_BY_ID[it.unit];return u?u.r:''}
+function answer(q,ok,attempt){
+  const it=q.it, firstTime=!(it.key in RUN.first);
+  if(firstTime){RUN.first[it.key]=ok; mark(it,ok); if(ok) RUN.fish++;
+    const td=today(); td.total++; if(ok) td.right++;
+    if(!ok&&!q.check){const b=RUN.q.findIndex(x=>x.bonus);RUN.q.splice(b<0?RUN.q.length:b,0,{it,type:'copy',retry:true})}}
+  const el=$('fb'); el.hidden=false;
+  if(ok){el.className='fb good';el.innerHTML=`<h3>${q.retry?'Fixed it!':'Yes!'}${firstTime?' +1 '+FISH:''}</h3>`;}
+  else{el.className='fb try';el.innerHTML=`<h3>Almost!</h3>${attempt!=null?diffHTML(attempt,it.w):''}${attempt==null?`<div class="bigword">${heartHTML(it.w)||esc(it.w)}</div>`:''}<p>${esc(ruleOf(it))}</p>`;}
+  el.innerHTML+=`<button class="btn block" id="nextBtn">Next</button>`;
+  if(!ok) setTimeout(()=>say(it.w),200);
+  const nb=$('nextBtn'); nb.onclick=()=>{RUN.i++;showQ()}; nb.focus({preventScroll:true});
+  el.scrollIntoView({behavior:'smooth',block:'nearest'});
+  save();
+}
+function choiceQ(q,prompt,head,opts,correct,onPick){
+  app.innerHTML=`${topBar()}<section class="card"><p class="prompt">${prompt}</p>${head}${cueHTML(q.it)}
+   <div class="choices c${opts.length}">${opts.map(o=>`<button class="choice" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+   <div id="fb" hidden></div></section>`;
+  app.querySelectorAll('.choice').forEach(b=>b.onclick=()=>{
+    const ok=b.dataset.o===correct;
+    app.querySelectorAll('.choice').forEach(c=>{c.disabled=true;if(c.dataset.o===correct)c.classList.add('right');else if(c===b)c.classList.add('wrong')});
+    if(onPick) onPick(); answer(q,ok,null);
+  });
+  if(speaking()) setTimeout(()=>sayItem(q.it),250);
+}
+function qGap(q){const it=q.it, opts=shuffle([it.g,...shuffle(it.galts.filter(a=>a)).slice(0,2)]);
+  choiceQ(q,'Pick the letters',`${speakBtn(it.w)}<div class="gapword">${esc(it.pre)}<span class="hole" id="hole">?</span>${esc(it.post)}</div>`,opts,it.g,()=>{$('hole').textContent=it.g})}
+function qPick(q){const it=q.it, opts=shuffle([it.w,...shuffle(it.wrong).slice(0,2)]);
+  choiceQ(q,'Pick the spelling',speakBtn(it.w),opts,it.w)}
+function qJoin(q){const it=q.it, opts=shuffle([it.w,...shuffle(it.wrong).slice(0,2)]);
+  choiceQ(q,'Add the ending',`<div class="gapword small2">${esc(it.base)} + ${esc(it.suf)}</div>`,opts,it.w)}
+function qBase(q){const it=q.it, opts=shuffle([it.w,...shuffle(it.wrong).slice(0,2)]);
+  choiceQ(q,u_prompt(it),`<div class="gapword small2">${esc(it.base)} → ?</div>`,opts,it.w)}
+function u_prompt(it){return 'Pick the word'}
+function qBuild(q){
+  const it=q.it, tiles=shuffle([...it.syl,it.decoy||'']).filter(Boolean); let picked=[];
+  app.innerHTML=`${topBar()}<section class="card"><p class="prompt">Build the word</p>${speakBtn(it.syl.join(' '),'Hear the parts')}
+   <div class="built" id="built" aria-live="polite"></div>
+   <div class="tiles">${tiles.map((t,i)=>`<button class="tile" data-i="${i}">${esc(t)}</button>`).join('')}</div>
+   <button class="link" id="undo">Undo</button><div id="fb" hidden></div></section>`;
+  const draw=()=>{$('built').innerHTML=picked.map(i=>`<span>${esc(tiles[i])}</span>`).join('');
+    app.querySelectorAll('.tile').forEach(b=>b.disabled=picked.includes(+b.dataset.i)||picked.length>=it.syl.length)};
+  app.querySelectorAll('.tile').forEach(b=>b.onclick=()=>{picked.push(+b.dataset.i);draw();
+    if(picked.length===it.syl.length){const word=picked.map(i=>tiles[i]).join('');$('undo').hidden=true;answer(q,word===it.w,word)}});
+  $('undo').onclick=()=>{picked.pop();draw()};
+  if(speaking()) setTimeout(()=>say(it.w),250);
+}
+function typeForm(prompt){
+  return `<form id="wf" autocomplete="off"><label for="spellIn" class="${prompt?'prompt':'sr'}">${prompt||'Type the word'}</label>
+     <input id="spellIn" class="spell" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off">
+     <button class="btn block" type="submit">Check</button></form>`;
+}
+function bindType(q){
+  $('wf').onsubmit=e=>{e.preventDefault();const v=$('spellIn').value.trim().toLowerCase().replace(/[’‘`]/g,"'");if(!v)return;const it=q.it;
+    if(homoOther(it,v)){const h=HOMO[it.w];const el=$('fb');el.hidden=false;el.className='fb same';
+      el.innerHTML=`<h3>Same sound, different word!</h3><p><b>${esc(v)}</b> is a real word. We want the one that means ${h[1]} ${esc(h[2])}.</p>`;
+      sayItem(it);$('spellIn').value='';$('spellIn').focus();return;}
+    const ok=v===it.w.toLowerCase()||(ACCEPT[it.w]||[]).includes(v);
+    $('wf').querySelectorAll('input,button').forEach(x=>x.disabled=true);answer(q,ok,v)};
+}
+function qSpell(q){
+  if(!speaking()) return qCopy(q);
+  const it=q.it;
+  app.innerHTML=`${topBar()}<section class="card"><p class="prompt">Listen and spell</p>
+    <button class="speak big" id="hearW">${ICON_SPEAK}Hear it</button>${cueHTML(it)}
+    ${typeForm('')}<div id="fb" hidden></div></section>`;
+  $('hearW').onclick=()=>sayItem(it); bindType(q); setTimeout(()=>{if(!$('spellIn'))return;sayItem(it);$('spellIn').focus()},250);
+}
+function qCopy(q){
+  const it=q.it;
+  app.innerHTML=`${topBar()}<section class="card"><p class="prompt">Look and say it</p>
+   <div class="bigword" id="bw">${display(it.kind==='mark'?it:{kind:'word',w:it.w})}</div>${speakBtn(it.w)}
+   <button class="btn block" id="hide">I'm ready. Hide it!</button>
+   <div id="wrap" hidden>${typeForm('Now spell it')}</div><div id="fb" hidden></div></section>`;
+  $('hide').onclick=()=>{$('bw').hidden=true;$('hide').hidden=true;$('wrap').hidden=false;$('spellIn').focus()};
+  bindType(q);
+}
+/* Treasure hunt: one word is misspelled. Find it, then fix it from memory. */
+function qHunt(q){
+  const it=q.it, bad=shuffle(it.wrong)[0], u=UNIT_BY_ID[it.unit]||{items:[]}, s=SENT[it.unit];
+  let toks;
+  if(s&&words(s).includes(it.w.toLowerCase())){toks=s.split(' ').map(t=>{const core=t.replace(/[^A-Za-z'’]/g,'');return core.toLowerCase()===it.w.toLowerCase()?{t:t.replace(core,bad),bad:true}:{t}})}
+  else toks=shuffle([{t:bad,bad:true},...shuffle(u.items.filter(x=>x.w!==it.w)).slice(0,3).map(x=>({t:x.w}))]);
+  app.innerHTML=`${topBar()}<section class="card"><p class="prompt">Find the mistake 🔍</p>
+   <div class="hunt">${toks.map((k,i)=>`<button class="hw" data-i="${i}">${esc(k.t)}</button>`).join(' ')}</div>
+   <div id="wrap" hidden>${typeForm('Fix it')}</div><div id="fb" hidden></div></section>`;
+  app.querySelectorAll('.hw').forEach(b=>b.onclick=()=>{const k=toks[+b.dataset.i];app.querySelectorAll('.hw').forEach(x=>x.disabled=true);
+    if(k.bad){b.classList.add('found');$('wrap').hidden=false;$('spellIn').focus();}
+    else{b.classList.add('wrong');app.querySelectorAll('.hw').forEach(x=>{if(toks[+x.dataset.i].bad)x.classList.add('found')});answer(q,false,null)}});
+  bindType(q);
+  if(speaking()) setTimeout(()=>say('Find the mistake.'),250);
+}
+/* Root Canyon: what does the root mean? */
+function qRoot(q){
+  const it=q.it, r=rootOf(it.w), others=shuffle([...new Set(ROOTS.map(x=>x[1]))].filter(m=>m!==r.m)).slice(0,2), opts=shuffle([r.m,...others]);
+  const head=`<div class="gapword small2">${esc(it.w.slice(0,r.i))}<b class="hl">${esc(r.r)}</b>${esc(it.w.slice(r.i+r.r.length))}</div>`;
+  choiceQ(q,`<b>${esc(r.r)}</b> means…`,head,opts,r.m);
+}
+/* Dictation: hear a sentence, write it. Bonus fish for each word from this stop. */
+function qDict(q){
+  const u=RUN.unit, s=SENT[u.id], targets=sentTargets(u);
+  app.innerHTML=`${topBar()}<section class="card"><p class="prompt">Hear it, write it</p>
+   <button class="speak big" id="hearS">${ICON_SPEAK}Hear it</button>
+   <form id="df" autocomplete="off"><label for="dIn" class="sr">Write the sentence</label>
+    <textarea id="dIn" class="spell sentence" rows="3" autocapitalize="sentences" autocorrect="off" spellcheck="false"></textarea>
+    <button class="btn block" type="submit">Check</button></form><div id="fb" hidden></div></section>`;
+  const play=()=>say(s); $('hearS').onclick=play; setTimeout(()=>{if(!$('dIn'))return;play();$('dIn').focus()},250);
+  $('df').onsubmit=e=>{e.preventDefault();const typed=words($('dIn').value);if(!typed.length)return;
+    $('df').querySelectorAll('textarea,button').forEach(x=>x.disabled=true);
+    let got=0; const miss=new Set();
+    targets.forEach(it=>{if(typed.includes(it.w.toLowerCase())||(ACCEPT[it.w]||[]).some(a=>typed.includes(a)))got++;else{miss.add(it.w.toLowerCase());mark(it,false)}});
+    RUN.fish+=got; RUN.dict={got,of:targets.length};
+    const shown=s.split(' ').map(t=>{const c=t.replace(/[^A-Za-z'’]/g,'').toLowerCase();return miss.has(c)?`<mark>${esc(t)}</mark>`:targets.some(x=>x.w.toLowerCase()===c)?`<b class="hl">${esc(t)}</b>`:esc(t)}).join(' ');
+    const el=$('fb');el.hidden=false;el.className='fb '+(miss.size?'try':'good');
+    el.innerHTML=`<h3>${miss.size?'Almost!':'Yes!'} +${got} ${FISH}</h3><p class="sentshow">${shown}</p><button class="btn block" id="nextBtn">Next</button>`;
+    $('nextBtn').onclick=()=>{RUN.i++;showQ()}; el.scrollIntoView({behavior:'smooth',block:'nearest'}); save();};
+}
+function diffHTML(a,b){
+  const n=a.length,m=b.length,d=Array.from({length:n+1},()=>Array(m+1).fill(0));
+  for(let i=n-1;i>=0;i--)for(let j=m-1;j>=0;j--)d[i][j]=a[i]===b[j]?d[i+1][j+1]+1:Math.max(d[i+1][j],d[i][j+1]);
+  const kA=new Set(),kB=new Set();let i=0,j=0;
+  while(i<n&&j<m){if(a[i]===b[j]){kA.add(i);kB.add(j);i++;j++}else if(d[i+1][j]>=d[i][j+1])i++;else j++}
+  return `<div class="diff"><span class="lbl">You wrote</span><span class="ltrs">${[...a].map((c,k)=>kA.has(k)?esc(c):`<s>${esc(c)}</s>`).join('')}</span>
+    <span class="lbl">Correct spelling</span><span class="ltrs">${[...b].map((c,k)=>kB.has(k)?esc(c):`<mark>${esc(c)}</mark>`).join('')}</span></div>`;
+}
+
+/* ---------- End of a round ---------- */
+function endRound(){
+  const R=RUN, t=dayNum(), td=today(), firstRight=Object.values(R.first).filter(Boolean).length, n=R.n;
+  const missed=Object.entries(R.first).filter(([k,v])=>!v).map(([k])=>k.split(':')[1]);
+  const before=td.fish; td.fish+=R.fish; td.rounds++; S.fish+=R.fish;
+  if(S.streak.last!==t){S.streak={last:t,count:S.streak.last===t-1?S.streak.count+1:1}}
+  const gem=before<GOAL&&td.fish>=GOAL; if(gem) S.gems++;
+  const piecesBefore=PHASES.filter(p=>!p.bank&&phaseDone(p.n)).length;
+  let status='', newFriend=null, unitTxt='', phaseTxt='', nextCheck=0;
+  if(R.kind==='unit'&&R.unit.p){
+    const u=R.unit, st=S.units[u.id]||(S.units[u.id]={}); st.rounds=(st.rounds||0)+1; st.best=Math.max(st.best||0,firstRight);
+    const spellOk=R.q.slice(0,n).every(q=>q.type!=='spell'||R.first[q.it.key]);
+    if(firstRight>=n-1&&spellOk){ if(!st.passed){st.passed=true;st.passDay=t;newFriend=u;status='passed'}
+      else if(!st.mastered&&t!==st.passDay){st.mastered=true;status='mastered'} else status=st.mastered?'mastered':'passed';}
+    else status='keep practising';
+    unitTxt=unitLabel(u); phaseTxt=String(u.p); S.lastTrack=u.bank?'bank':'trail';
+  } else if(R.kind==='check'){
+    const misses=Object.values(R.first).filter(v=>!v).length;
+    R.q.forEach(q=>{if(R.first[q.it.key]){const st=S.units[q.it.unit]||(S.units[q.it.unit]={});if(!st.passed){st.passed=true;st.passDay=t;st.via='check';
+      // skipped words still get checked later: spread them through review over the next 60 days
+      UNIT_BY_ID[q.it.unit].items.forEach((it,j)=>{if(!S.words[it.key])S.words[it.key]={b:2,due:t+1+((j*7+UNITS.indexOf(UNIT_BY_ID[q.it.unit])*3)%60),s:1,r:1}})}}});
+    UNITS.filter(u=>u.p===R.phase&&u.mode==='mix').forEach(u=>{if(phaseUnits(R.phase).filter(x=>x.mode!=='mix').every(x=>unitState(x.id).passed)){(S.units[u.id]=S.units[u.id]||{}).passed=true}});
+    const stop=misses>=2; S.placement.phase=R.phase;
+    if(R.phase<=10) nextCheck=(stop||R.phase===10)?11:R.phase+1; else if(!stop&&R.phase<13) nextCheck=R.phase+1;
+    if(!nextCheck) S.placement.done=true; R.toGold=R.phase<=10&&nextCheck===11;
+    status=stop?'check finished':'check passed'; unitTxt='Quick check'; phaseTxt=String(R.phase);
+  } else {if(R.kind==='review') td.reviews=(td.reviews||0)+1; status='review';unitTxt=R.kind==='review'?'Mixed review':'My story words';phaseTxt='';}
+  const piece=PHASES.filter(p=>!p.bank&&phaseDone(p.n)).length>piecesBefore;
+  const now=new Date();
+  logRound([dayLabel(t),now.toTimeString().slice(0,5),R.kind==='unit'?'Lesson':R.kind==='check'?'Check':'Review',phaseTxt,unitTxt,firstRight+'/'+n,R.fish,missed.join(', '),status,S.gems]);
+  save(true);
+  const cur=currentUnit();
+  const title=R.kind==='check'?(R.toGold?'Now: gold words!':nextCheck?'Checkpoint cleared!':'Check done!'):`+${R.fish} `;
+  const again=status==='keep practising';
+  const btn=nextCheck?['cont','Keep going']:again?['nx','Try again']:cur?['nx','Next stop']:null;
+  app.innerHTML=`<section class="card done">
+    <h2 class="endt">${title}${R.kind==='check'?'':FISH}</h2>
+    <p class="score tab">${firstRight}/${n}</p>
+    ${newFriend?`<div class="prize" id="pf"><b>Pick a friend</b><div class="row center-row">${friendChoices(newFriend).map(a=>`<button class="pickani" data-a="${a}">${a}</button>`).join('')}</div></div>`:''}
+    ${status==='mastered'&&R.kind==='unit'?`<div class="prize"><span class="bigani">★</span><b>Mastered!</b></div>`:''}
+    ${gem?`<div class="prize"><span class="gem big"></span><b>Daily goal! +1 gem</b></div>`:''}
+    ${piece?`<div class="prize"><span class="bigani">🗺️</span><b>Map piece!</b></div>`:''}
+    ${again?`<p>Spell every listening word right to pass.</p>`:''}
+    ${btn?`<button class="btn block" id="${btn[0]}">${btn[1]}</button>`:''}
+    <button class="btn secondary block" id="home">Home</button></section>`;
+  if(newFriend) app.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{const a=b.dataset.a;(S.units[newFriend.id]||{}).friend=a;(S.friends=S.friends||[]).push(a);save();
+    $('pf').innerHTML=`<span class="bigani">${a}</span>`; say('Hello, friend!')});
+  if($('cont')) $('cont').onclick=()=>startCheck(nextCheck);
+  if($('nx')) $('nx').onclick=()=>intro(status==='keep practising'&&R.unit?R.unit.id:cur.id);
+  $('home').onclick=()=>{OPEN_PHASE=null;home()};
+  SCREEN='end'; RUN=null; window.scrollTo(0,0);
+}
+function friendChoices(u){const i=UNITS.indexOf(u), have=S.friends||[];
+  const pool=ANIMALS.filter(a=>!have.includes(a)); const src=pool.length>=2?pool:ANIMALS;
+  return [src[(i*7)%src.length],src[(i*7+3)%src.length]].filter((a,j,arr)=>arr.indexOf(a)===j)}
+
+/* ---------- Grown-ups ---------- */
+function grownups(){
+  const passed=UNITS.filter(u=>unitState(u.id).passed).length, mastered=UNITS.filter(u=>unitState(u.id).mastered).length;
+  const days=Object.keys(S.days).length, t=dayNum();
+  let r7=0,n7=0; for(let d=t-6;d<=t;d++){const x=S.days[d];if(x){r7+=x.right;n7+=x.total}}
+  const tricky=Object.entries(S.words).filter(([k,w])=>w.s>=2&&w.r/w.s<.67).sort((a,b)=>a[1].r/a[1].s-b[1].r/b[1].s).slice(0,20).map(([k])=>k.split(':')[1]);
+  const recent=(S.log||[]).slice(-10).reverse();
+  SCREEN='grown';
+  app.innerHTML=`<div class="top"><button class="back" id="back" aria-label="Back to the trail">←</button><span class="muted">Grown-ups</span></div>
+   <section class="card"><h2>Students</h2>
+    <p class="small muted">Each student has their own progress. With two or more, the app asks "Who's practising?" when it opens. The name goes in the sheet's Student column.</p>
+    ${ROSTER.students.map(x=>`<div class="row"><input class="field grow" data-nm="${esc(x.id)}" value="${esc(x.name)}" placeholder="Name" aria-label="Student name"><span class="small muted">${x.id===student().id?'now practising':''}</span>${ROSTER.students.length>1&&x.id!==student().id?`<button class="link" data-rm="${esc(x.id)}">remove</button>`:''}</div>`).join('')}
+    <div class="row"><button class="btn secondary" id="saveNames">Save names</button><button class="btn secondary" id="addSt">Add a student</button><span class="small muted" id="stMsg"></span></div>
+   </section>
+   <section class="card"><h2>Progress: ${esc(studentName())}</h2>
+    <div class="row"><button class="btn secondary" id="map">Choose a stop</button></div>
+    <div class="stats">
+      <div><b>${passed}/${UNITS.length}</b><span>stops passed</span></div>
+      <div><b>${mastered}</b><span>stops mastered</span></div>
+      <div><b>${days}</b><span>days practised</span></div>
+      <div><b>${n7?Math.round(r7/n7*100)+'%':'–'}</b><span>first-try accuracy, last 7 days</span></div>
+      <div><b>${dueKeys().length}</b><span>words due for review</span></div>
+    </div>
+    <div class="tablewrap"><table><thead><tr><th>Phase</th><th>Passed</th><th>Mastered</th></tr></thead><tbody>
+     ${PHASES.map(p=>{const us=phaseUnits(p.n);return `<tr><td>${p.n}. ${esc(p.name)}</td><td class="tab">${us.filter(u=>unitState(u.id).passed).length}/${us.length}</td><td class="tab">${us.filter(u=>unitState(u.id).mastered).length}</td></tr>`}).join('')}
+    </tbody></table></div>
+    <h3>Tricky words</h3>${tricky.length?`<p>${tricky.map(esc).join(', ')}</p>`:'<p class="small muted">None yet. Words she misses more than once show here.</p>'}
+    <h3>Recent rounds</h3>${recent.length?`<div class="tablewrap"><table><thead><tr><th>Date</th><th>Unit</th><th>Score</th><th>Missed</th></tr></thead><tbody>${recent.map(r=>`<tr><td class="tab">${esc(r[0])} ${esc(r[1])}</td><td>${esc(r[4])}</td><td class="tab">${esc(r[5])}</td><td>${esc(r[7])}</td></tr>`).join('')}</tbody></table></div>`:'<p class="small muted">No rounds yet.</p>'}
+    <p class="small muted">A stop passes at 5 of 6 right on the first try, including every listen-and-spell word. It is mastered after a second pass on a later day. Missed words come back in review sooner; known words come back after 1, 2, 4, 7 and 14 days.</p>
+   </section>
+   <section class="card"><h2>Google Sheet</h2>
+    ${IN_CLAUDE?`<p class="small">Paste the link to your "Practice progress" sheet. Each round adds a row to its Spelling tab. Claude asks once for permission to use Google Sheets.</p>
+      <label for="sheet">Sheet link</label><input class="field" id="sheet" value="${esc(S.sheetId?'https://docs.google.com/spreadsheets/d/'+S.sheetId:'')}" placeholder="https://docs.google.com/spreadsheets/d/...">`
+    :`<p class="small">Paste the web app URL from the Practice progress Apps Script (it ends in /exec). Each round adds a row to the Spelling tab.</p>
+      <label for="sheet">Apps Script web app URL</label><input class="field" id="sheet" value="${esc(S.sheetUrl||'')}" placeholder="https://script.google.com/macros/s/.../exec">`}
+    <div class="row"><button class="btn secondary" id="sheetSave">Save and send a test row</button><span class="small muted" id="sheetMsg"></span></div>
+   </section>
+   <section class="card"><h2>Saving</h2>
+    <p class="small">${SYNC==='account'?'Progress is saved to your Claude account and in this browser.':'Progress is saved in this browser on this device. Download a backup now and then, in case browser data is cleared.'}</p>
+    <div class="row"><button class="btn secondary" id="bk">Download backup</button><label class="btn secondary filebtn" for="rs">Restore backup</label><input type="file" id="rs" accept=".json,application/json" hidden><button class="btn secondary" id="csv">Download rounds (CSV)</button></div>
+    <p class="small" id="rsMsg"></p>
+   </section>
+   <section class="card"><h2>Settings</h2>
+    <label class="check"><input type="checkbox" id="voice" ${S.voice!==false?'checked':''}> Read words aloud${HAS_TTS?'':' (this browser has no speech)'}</label>
+    ${HAS_TTS?`<label for="vsel">Voice</label><select class="field" id="vsel">${englishVoices().map(v=>`<option value="${esc(v.name)}" ${VOICE&&VOICE.name===v.name?'selected':''}>${esc(v.name)} (${esc(v.lang)})</option>`).join('')}</select>
+    <label for="vrate">Speed</label><input type="range" id="vrate" min="0.6" max="1.1" step="0.05" value="${S.rate||.9}">
+    <div class="row"><button class="btn secondary" id="vtest">Test voice</button></div>
+    <p class="small muted">Voices come from the device and browser. The most natural free ones are the "Natural" voices in Microsoft Edge and the "Google" voices in Chrome. On a Mac or iPad, you can download better "Enhanced" voices in Settings > Accessibility > Spoken Content.</p>`:''}
+    <div class="row"><button class="btn secondary" id="recheck">Redo the quick check</button></div>
+    <h3>Add words from her stories</h3>
+    <form id="addf" class="row" autocomplete="off"><input class="field grow" id="cw" placeholder="Correct spelling" aria-label="Correct spelling" autocapitalize="off" spellcheck="false"><input class="field grow" id="cx" placeholder="How she spelled it" aria-label="How she spelled it" autocapitalize="off" spellcheck="false"><button class="btn secondary" type="submit">Add</button></form>
+    ${S.custom.length?`<p class="small">${S.custom.map((c,i)=>`${esc(c.w)} <button class="link" data-del="${i}">remove</button>`).join(' · ')}</p>`:''}
+    <div class="row"><button class="btn secondary danger" id="reset">Reset ${esc(studentName())}'s progress</button><button class="btn" id="resetYes" hidden>Yes, erase it</button></div>
+   </section>`;
+  $('back').onclick=home; $('map').onclick=()=>{OPEN_PHASE=null;trailMap()};
+  const readNames=()=>app.querySelectorAll('[data-nm]').forEach(i=>{const x=ROSTER.students.find(y=>y.id===i.dataset.nm);if(x)x.name=i.value.trim().slice(0,30)});
+  $('saveNames').onclick=()=>{readNames();syncRoster();$('stMsg').textContent='Saved.'};
+  $('addSt').onclick=()=>{readNames();addStudent('Student '+(ROSTER.students.length+1));syncRoster();grownups()};
+  app.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{if(b.textContent!=='Sure? Tap again'){b.textContent='Sure? Tap again';return}
+    ROSTER.students=ROSTER.students.filter(x=>x.id!==b.dataset.rm);try{localStorage.removeItem(skey(b.dataset.rm))}catch(e){}syncRoster();grownups()});
+  $('sheetSave').onclick=async()=>{const v=$('sheet').value.trim();const msg=$('sheetMsg');
+    if(IN_CLAUDE){const m=v.match(/\/d\/([a-zA-Z0-9-_]+)/);S.sheetId=m?m[1]:(/^[a-zA-Z0-9-_]{20,}$/.test(v)?v:'');if(!S.sheetId){msg.textContent='That doesn\'t look like a Google Sheet link.';return}}
+    else{if(v&&!/^https:\/\/script\.google\.com\/.+\/exec$/.test(v)){msg.textContent='The URL should start with https://script.google.com and end with /exec.';return}S.sheetUrl=v}
+    save(); msg.textContent='Sending…';
+    await logRound([dayLabel(dayNum()),new Date().toTimeString().slice(0,5),'Test','','Connection test','','','','',S.gems]); S.log.pop(); save();
+    msg.textContent=IN_CLAUDE?(S.sheetOk?'Test row added. Check the Spelling tab.':'Could not reach the sheet. Check the link and the Google Sheets permission.'):'Sent. Check the Spelling tab for a test row.';};
+  $('bk').onclick=()=>{save();const all={v:3,roster:ROSTER,students:{}};ROSTER.students.forEach(x=>all.students[x.id]=x.id===student().id?S:readStudent(x.id));
+    download('spelling-backup-'+dayLabel(dayNum())+'.json',JSON.stringify(all),'application/json')};
+  $('csv').onclick=()=>download('spelling-rounds.csv',[SHEET_HEADER,...ROSTER.students.flatMap(x=>((x.id===student().id?S:readStudent(x.id))||{log:[]}).log.map(r=>[x.name||'Student 1',...r]))].map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n'),'text/csv');
+  $('rs').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);
+      if(d.v===3&&d.roster&&d.students){ROSTER=d.roster;saveRoster();Object.entries(d.students).forEach(([id,st])=>{if(st)try{localStorage.setItem(skey(id),JSON.stringify(st))}catch(e){}});
+        S=readStudent(student().id)||blank();syncRoster();save(true);}
+      else if(d.v===2){S=Object.assign(blank(),d);save(true);} else throw 0;
+      $('rsMsg').textContent='Backup restored.'}catch(x){$('rsMsg').textContent='That file is not a spelling backup.'}};r.readAsText(f)};
+  $('voice').onchange=e=>{S.voice=e.target.checked;save()};
+  if($('vsel')){$('vsel').onchange=e=>{S.voiceName=e.target.value;pickVoice();save();say('Hello! Let\'s spell together.')};
+    $('vrate').onchange=e=>{S.rate=+e.target.value;save();say('beach')};
+    $('vtest').onclick=()=>say('Hello! Can you spell the word, beach?');}
+  $('recheck').onclick=()=>startCheck(1);
+  $('addf').onsubmit=e=>{e.preventDefault();const w=$('cw').value.trim().toLowerCase(),x=$('cx').value.trim().toLowerCase();if(!/^[a-z'-]+$/.test(w))return;S.custom.push({w,x:(x&&x!==w&&/^[a-z'-]+$/.test(x))?x:''});save();grownups()};
+  app.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{S.custom.splice(+b.dataset.del,1);save();grownups()});
+  $('reset').onclick=()=>{$('resetYes').hidden=false};
+  $('resetYes').onclick=()=>{const keep={sheetId:S.sheetId,sheetUrl:S.sheetUrl,custom:S.custom};S=Object.assign(blank(),keep);save(true);OPEN_PHASE=null;home()};
+  window.scrollTo(0,0);
+}
+
+route();
+connect();
+</script>
+
+</body>
+</html>
