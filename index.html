@@ -910,7 +910,7 @@ function say(t,rate){
   stopSpeech(); const tok=PLAY_TOKEN, pr=rate?Math.max(.6,Math.min(1.2,rate/.9)):1;
   const next=i=>{if(tok!==PLAY_TOKEN||i>=segs.length)return;const s=segs[i];
     if(!s){setTimeout(()=>next(i+1),350);return}
-    const a=new Audio(AUDIO_DIR+fnv(s)+'.mp3');CUR_AUDIO=a;a.playbackRate=pr;try{a.preservesPitch=true}catch(e){}
+    const a=new Audio(AUDIO_DIR+fnv(s)+'.mp3?v=2');CUR_AUDIO=a;a.playbackRate=pr;try{a.preservesPitch=true}catch(e){}
     const go=()=>setTimeout(()=>next(i+1),/^[a-z']$|^apostrophe$/.test(s)?60:120);
     a.onended=go;a.onerror=()=>{if(tok===PLAY_TOKEN){AUDIO_KEYS.delete(fnv(s));ttsSay(segs.slice(i).join('. '),rate)}};
     a.play().catch(()=>{if(tok===PLAY_TOKEN)ttsSay(segs.slice(i).join('. '),rate)})};
