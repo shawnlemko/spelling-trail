@@ -962,9 +962,9 @@ function qHunt(q){
   else toks=shuffle([{t:bad,bad:true},...shuffle(u.items.filter(x=>x.w!==it.w)).slice(0,3).map(x=>({t:x.w}))]);
   app.innerHTML=`${topBar()}<section class="card"><p class="prompt">Find the mistake 🔍</p>
    <div class="hunt">${toks.map((k,i)=>`<button class="hw" data-i="${i}">${esc(k.t)}</button>`).join(' ')}</div>
-   <div id="wrap" hidden>${typeForm('Fix it')}</div><div id="fb" hidden></div></section>`;
+   <div id="wrap" hidden>${speakBtn(it.w)}${cueHTML(it)}${typeForm('Fix it')}</div><div id="fb" hidden></div></section>`;
   app.querySelectorAll('.hw').forEach(b=>b.onclick=()=>{const k=toks[+b.dataset.i];app.querySelectorAll('.hw').forEach(x=>x.disabled=true);
-    if(k.bad){b.classList.add('found');$('wrap').hidden=false;$('spellIn').focus();}
+    if(k.bad){b.classList.add('found');$('wrap').hidden=false;$('spellIn').focus();sayItem(it);}
     else{b.classList.add('wrong');app.querySelectorAll('.hw').forEach(x=>{if(toks[+x.dataset.i].bad)x.classList.add('found')});answer(q,false,null)}});
   bindType(q);
   if(speaking()) setTimeout(()=>say('Find the mistake.'),250);
