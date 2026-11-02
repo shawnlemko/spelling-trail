@@ -217,6 +217,9 @@ textarea.sentence{font-family:var(--body),system-ui,sans-serif;font-size:1.3rem;
 .pbox .fixed{color:var(--amber)}
 @media (min-width:900px) and (min-height:640px){html{font-size:118%}#app{max-width:760px;padding-top:4vh}.sbox{width:70px;height:74px}.bear{width:120px}}
 @media (min-width:1500px) and (min-height:900px){html{font-size:132%}#app{max-width:860px}}
+.mode{flex:none;font-size:.85rem;font-weight:700;padding:5px 10px;border-radius:99px;white-space:nowrap}
+.mode.check{background:var(--lake-soft);color:var(--lake)}.mode.learn{background:var(--pine-soft);color:var(--pine)}.mode.practice{background:var(--amber-soft);color:var(--amber)}
+.mode.inl{background:rgba(255,255,255,.25);color:inherit;font-size:.8rem;padding:2px 8px}
 </style>
 
 </head>
@@ -1005,12 +1008,12 @@ function who(){
 /* ---------- Home: one big next step, little else ---------- */
 function nextAction(){
   const cur=currentUnit(), due=dueKeys().length;
-  if(!S.placement.done&&!UNITS.some(u=>unitState(u.id).passed)) return {label:'Go!',cap:'Quick check',go:()=>startCheck(1)};
-  if((due>=3&&!today().reviews)||due>=15) return {label:'Go!',cap:'Warm-up review',go:startReview};
+  if(!S.placement.done&&!UNITS.some(u=>unitState(u.id).passed)) return {label:'Go!',mode:'check',cap:'Quick check',go:()=>startCheck(1)};
+  if((due>=3&&!today().reviews)||due>=15) return {label:'Go!',mode:'practice',cap:'Warm-up review',go:startReview};
   const bk=bankUnit();
-  if(bk&&(S.lastTrack==='trail'||!cur)) return {label:'Go!',cap:'Gold words',go:()=>intro(bk.id)};
-  if(cur) return {label:'Go!',cap:cur.t,go:()=>intro(cur.id)};
-  if(due) return {label:'Go!',cap:'Review',go:startReview};
+  if(bk&&(S.lastTrack==='trail'||!cur)) return {label:'Go!',mode:'learn',cap:'Gold words',go:()=>intro(bk.id)};
+  if(cur) return {label:'Go!',mode:'learn',cap:cur.t,go:()=>intro(cur.id)};
+  if(due) return {label:'Go!',mode:'practice',cap:'Review',go:startReview};
   return null;
 }
 function home(){
@@ -1023,7 +1026,7 @@ function home(){
      <div class="row"><span class="fishcount">${FISH}${S.fish}</span><span class="fishcount"><span class="gem"></span>${S.gems}</span><span class="fishcount">${(S.friends||[]).slice(-1)[0]||'🐾'}${friends}</span>${st?`<span class="streak">${st} day${st>1?'s':''}</span>`:''}</div></div></div>
    <section class="card today">
      <div class="goal"><div class="bar big"><i style="width:${pct}%"></i></div><span class="fishcount small2">${FISH}${Math.min(f,GOAL)}/${GOAL}</span></div>
-     ${nx?`<button class="btn go" id="go"><span>${nx.label}</span><span class="cap">${esc(nx.cap)}</span></button>`:'<p class="center-t">Trail complete!</p>'}
+     ${nx?`<button class="btn go" id="go"><span>${nx.label}</span><span class="cap">${MODES[nx.mode][0]} ${MODES[nx.mode][1]}: ${esc(nx.mode==='check'?'find your level':nx.cap)}</span></button>`:'<p class="center-t">Trail complete!</p>'}
      ${fresh?'<button class="link" id="skip">Skip the check</button>':''}
    </section>
    ${sceneSVG(sceneOf())}
@@ -1070,7 +1073,7 @@ function chest(){
 function intro(id){
   const u=id==='my'?myUnit():UNIT_BY_ID[id]; if(!u||!u.items.length) return home();
   const ex=u.mode==='mix'?shuffle(u.items).slice(0,4):u.items.slice(0,4);
-  app.innerHTML=`<div class="top"><button class="back" id="back" aria-label="Back">←</button><h2>${esc(u.t)}</h2></div>
+  app.innerHTML=`<div class="top"><button class="back" id="back" aria-label="Back">←</button>${modeBadge('learn')}<h2>${esc(u.t)}</h2></div>
    <section class="card">
      <div class="rule">${toolChip(toolFor(u.id))}<p class="rtext">${esc(u.r)}</p>${speakBtn(u.r,'Hear it')}</div>
      ${FAM[u.id]?`<div class="fams">${FAM[u.id].map(([k,ws])=>`<div class="fam"><b class="hl famk">${esc(k)}</b>${ws.split(' ').map(w=>`<button class="ex" data-say="${esc(w)}">${esc(w).replace(esc(k),`<b class="hl">${esc(k)}</b>`)}</button>`).join('')}</div>`).join('')}</div>`
@@ -1114,9 +1117,13 @@ function startCheck(p){
   const q=us.map(u=>({it:shuffle(u.items)[0],type:speaking()?'spell':'pick',check:true}));
   RUN={kind:'check',phase:p,q,i:0,fish:0,first:{},n:q.length}; showQ();
 }
+/* Which part of the process she is in: Check (find her level), Learn (a new stop), Practice (review) */
+const MODES={check:['🔍','Check'],learn:['📘','Learn'],practice:['🔁','Practice']};
+function modeBadge(m,inline){const x=MODES[m];return x?`<span class="mode ${m}${inline?' inl':''}">${x[0]} ${x[1]}</span>`:''}
+const runMode=()=>RUN.kind==='check'?'check':RUN.kind==='review'?'practice':(RUN.unit&&unitState(RUN.unit.id).passed?'practice':'learn');
 function topBar(){
   const pct=Math.round(RUN.i/RUN.q.length*100), prev=RUN.lastPct==null?0:RUN.lastPct; RUN.lastPct=pct;
-  return `<div class="top"><button class="back" id="back" aria-label="Leave this round">←</button><div class="trail" aria-hidden="true"><i style="width:${prev}%"></i><span class="walker" data-to="${pct}" style="left:${prev}%">${MINI_BEAR}</span></div><span class="fishcount" id="fc">${FISH}${RUN.fish}</span></div>`;
+  return `<div class="top"><button class="back" id="back" aria-label="Leave this round">←</button>${modeBadge(runMode())}<div class="trail" aria-hidden="true"><i style="width:${prev}%"></i><span class="walker" data-to="${pct}" style="left:${prev}%">${MINI_BEAR}</span></div><span class="fishcount" id="fc">${FISH}${RUN.fish}</span></div>`;
 }
 function showQ(){
   if(RUN.i>=RUN.q.length) return endRound();
@@ -1343,6 +1350,7 @@ function grownups(){
     </tbody></table></div>
     <h3>Tricky words</h3>${tricky.length?`<p>${tricky.map(esc).join(', ')}</p>`:'<p class="small muted">None yet. Words she misses more than once show here.</p>'}
     <h3>Recent rounds</h3>${recent.length?`<div class="tablewrap"><table><thead><tr><th>Date</th><th>Unit</th><th>Score</th><th>Missed</th></tr></thead><tbody>${recent.map(r=>`<tr><td class="tab">${esc(r[0])} ${esc(r[1])}</td><td>${esc(r[4])}</td><td class="tab">${esc(r[5])}</td><td>${esc(r[7])}</td></tr>`).join('')}</tbody></table></div>`:'<p class="small muted">No rounds yet.</p>'}
+    <p class="small"><b>The three parts:</b> 🔍 <b>Check</b> finds her starting level (first visit, or "Redo the quick check"). 📘 <b>Learn</b> teaches a new stop: a rule, examples, then a round of 6. 🔁 <b>Practice</b> brings back words she has learned, spaced over days, plus redoing passed stops. The badge at the top of each screen shows which one she is in.</p>
     <p class="small muted">A stop passes at 5 of 6 right on the first try, including every listen-and-spell word. It is mastered after a second pass on a later day. Missed words come back in review sooner; known words come back after 1, 2, 4, 7 and 14 days.</p>
    </section>
    <section class="card"><h2>Google Sheet</h2>
