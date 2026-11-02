@@ -202,6 +202,11 @@ textarea.sentence{font-family:var(--body),system-ui,sans-serif;font-size:1.3rem;
 .scene .s8{fill:var(--surface)}.scene .s9{fill:color-mix(in srgb,var(--salmon) 45%,var(--bg))}.scene .s10{stroke:var(--salmon);fill:none}
 .scene .s11{fill:var(--ink);opacity:.75}.scene .s12{fill:var(--gold)}
 .scene.lake .s2{fill:color-mix(in srgb,var(--lake) 25%,var(--bg))}
+.boxes{display:flex;justify-content:center;gap:8px;margin:14px 0;border-radius:14px}
+.sbox{width:58px;height:62px;border:3px solid var(--line);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:600;background:var(--bg)}
+.sbox.on{border-color:var(--lake);background:var(--lake-soft);animation:popin .25s ease}
+.sound{position:absolute;top:12px;right:12px;font-size:1.5rem;background:var(--surface);border:2px solid var(--line);border-radius:14px;width:52px;height:52px;z-index:2}
+#app{position:relative}
 </style>
 
 </head>
@@ -702,6 +707,70 @@ function sceneSVG(k){
    mine:'<path class="s9" d="M120 120 Q200 20 280 120Z"/><path class="s11" d="M165 120 Q200 60 235 120Z"/>'+[[60,104],[80,110],[320,106],[345,112],[200,112]].map(([x,y])=>`<circle class="s12" cx="${x}" cy="${y}" r="5"/>`).join('')}[k];
   return `<svg class="scene ${k}" viewBox="0 0 400 120" preserveAspectRatio="xMidYMax slice" aria-hidden="true">${k==='peaks'||k==='canyon'||k==='mine'?'':hills}${extra}</svg>`;
 }
+/* ---------- Coach voice: talks her through every screen while sound is on ---------- */
+const coachOn=()=>speaking()&&S.coach!==false;
+const pickOne=a=>a[Math.floor(Math.random()*a.length)];
+const itemSpeech=it=>{const h=HOMO[it.w];return h?it.w+'. '+h[2]+'. '+it.w:it.w};
+const spellOut=w=>w.split('').map(c=>c==="'"?'apostrophe':c).join(', ');
+const LINES={gap:['Which letters make that sound?','Pick the letters for this sound.'],
+ pick:['Which one is spelled right?','Find the right spelling.'],build:['Build the word from its parts.'],
+ join:['Add the ending. Which one is right?'],base:['Which word is it?'],
+ spell:['Listen, and spell.','Your turn. Spell this word.','Spell this one.'],
+ copy:['Look closely at this word. When you are ready, hide it and spell it.'],
+ retry:["Let's fix that one. Look closely, then hide it and spell it."],
+ hunt:['One word is spelled wrong. Can you find it?','Find the mistake.'],
+ root:['What does this word part mean?'],dict:['Listen to the sentence, then write it.'],
+ boxes:['How many sounds do you hear? Fill one box for each sound.','Tap the sounds in order.'],
+ check:["Let's see what you know. Spell this word."]};
+/* What to say when a question appears. Without the coach, it says just the word, as before. */
+function promptSpeech(q){
+  const t=q.retry?'retry':q.check?'check':q.type, it=q.it;
+  const word=['copy','retry','hunt','dict','root'].includes(t)?'':itemSpeech(it);
+  if(!coachOn()) return t==='hunt'?'Find the mistake.':(t==='copy'||t==='retry'||t==='root')?'':word;
+  return pickOne(LINES[t]||['']).concat(word?' '+word:'');
+}
+function sayPrompt(q,delay){const s=promptSpeech(q);if(s&&speaking())setTimeout(()=>{if(RUN&&RUN.q[RUN.i]===q)say(s)},delay||250)}
+function feedbackSpeech(ok,it,retry){
+  if(!coachOn()) return ok?'':it.w;
+  if(ok) return retry?pickOne(['Fixed it!','Yes, that is it now.']):pickOne(['Yes!','Nice work!','You got it!','Great spelling!']);
+  return `Almost. ${it.w} is spelled ${spellOut(it.w)}.`;
+}
+function endSpeech(status,gem,kind){
+  if(!coachOn()) return '';
+  const parts=[];
+  if(kind==='check') parts.push(status==='check passed'?'Great. Let us keep going.':'Thanks. Now I know where to start.');
+  else if(status==='passed') parts.push('You passed this stop! Pick a friend to join you.');
+  else if(status==='mastered') parts.push('You mastered this stop!');
+  else if(status==='keep practising') parts.push("Good try. Let's practise these again.");
+  else parts.push('Nice review!');
+  if(gem) parts.push('And you reached your goal for today!');
+  return parts.join(' ');
+}
+let GREETED=false;
+function greet(){if(GREETED||!coachOn())return;GREETED=true;const n=ROSTER.students.length>1||student().name?student().name:'';
+  setTimeout(()=>{if(SCREEN==='home')say(`Hi${n?' '+n:''}! Tap Go when you're ready.`)},400)}
+
+/* ---------- Sound boxes: one box for each sound, early stops only ---------- */
+const GRAPH=['tch','dge','igh','ck','sh','ch','th','ng','wh','qu','ee','ea','ai','ay','oa','ow','oo','ew','ue','ou','oi','oy','ll','ss','ff','zz'];
+function soundsOf(w){const out=[];let i=0;while(i<w.length){const g=GRAPH.find(g=>w.startsWith(g,i))||w[i];out.push(g);i+=g.length}return out}
+const BOX_UNITS=['1.1','1.2','1.3','2.1','2.2','2.3','2.4','2.5','2.6','4.1','4.2','4.4','4.5','4.6','4.7','4.8','4.9'];
+const boxOk=it=>BOX_UNITS.includes(it.unit)&&/^[a-z]+$/.test(it.w)&&!/[^aeiou]e$/.test(it.w)&&soundsOf(it.w).length>=2;
+function qBoxes(q){
+  const it=q.it, parts=soundsOf(it.w), n=parts.length;
+  const alts=(it.galts||[]).filter(a=>a&&!parts.includes(a)).slice(0,1);
+  const extra=shuffle('abdfgilmnoprstu'.split('').filter(c=>!parts.includes(c))).slice(0,2-alts.length);
+  const tiles=shuffle([...parts,...alts,...extra]); let picked=[];
+  app.innerHTML=`${topBar()}<section class="card"><p class="prompt">Sound boxes</p>${speakBtn(it.w)}
+   <div class="boxes" id="boxes">${parts.map(()=>'<span class="sbox"></span>').join('')}</div>
+   <div class="tiles">${tiles.map((t,i)=>`<button class="tile" data-i="${i}">${esc(t)}</button>`).join('')}</div>
+   <button class="link" id="undo">Undo</button><div id="fb" hidden></div></section>`;
+  const draw=()=>{app.querySelectorAll('.sbox').forEach((b,k)=>{b.textContent=picked[k]!=null?tiles[picked[k]]:'';b.classList.toggle('on',picked[k]!=null)});
+    app.querySelectorAll('.tile').forEach(b=>b.disabled=picked.includes(+b.dataset.i)||picked.length>=n)};
+  app.querySelectorAll('.tile').forEach(b=>b.onclick=()=>{picked.push(+b.dataset.i);draw();
+    if(picked.length===n){const word=picked.map(i=>tiles[i]).join('');$('undo').hidden=true;
+      if(word===it.w) $('boxes').classList.add('glow'); answer(q,word===it.w,word)}});
+  $('undo').onclick=()=>{picked.pop();draw()};
+}
 /* ---------- Helpers ---------- */
 const app=document.getElementById('app');
 const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -782,6 +851,7 @@ function home(){
   const friends=UNITS.filter(u=>unitState(u.id).passed).length, multi=ROSTER.students.length>1;
   const fresh=!S.placement.done&&!friends; SCREEN='home';
   app.innerHTML=`
+   ${HAS_TTS?`<button class="sound" id="snd" aria-label="${speaking()?'Turn sound off':'Turn sound on'}" aria-pressed="${speaking()}">${speaking()?'🔊':'🔇'}</button>`:''}
    <div class="hero"><div class="bearbox">${bear()}${(S.friends||[]).length?`<span class="buddy ${S.newBuddy?'popin':''}">${S.friends.slice(-1)[0]}</span>`:''}</div><div class="herotext"><h1>${multi?esc(studentName()):'Spelling Trail'}</h1>
      <div class="row"><span class="fishcount">${FISH}${S.fish}</span><span class="fishcount"><span class="gem"></span>${S.gems}</span><span class="fishcount">${(S.friends||[]).slice(-1)[0]||'🐾'}${friends}</span>${st?`<span class="streak">${st} day${st>1?'s':''}</span>`:''}</div></div></div>
    <section class="card today">
@@ -792,6 +862,8 @@ function home(){
    ${sceneSVG(sceneOf())}
    <div class="row center-row">${multi?'<button class="link" id="who">Switch</button>':''}<button class="link" id="grown">Grown-ups</button></div>`;
   if(S.newBuddy){S.newBuddy=false;save()}
+  if(HAS_TTS){$('snd').onclick=()=>{S.voice=S.voice===false;save();home();if(speaking())say(coachOn()?"Sound is on. I'll talk you through it.":'Sound is on.')}}
+  greet();
   if(nx) $('go').onclick=nx.go;
   if(fresh) $('skip').onclick=()=>{S.placement.done=true;save();home()};
   $('grown').onclick=grownups; if(multi) $('who').onclick=who;
@@ -838,13 +910,14 @@ function intro(id){
    </section>
    <button class="btn block" id="go">Start</button>`;
   SCREEN='intro'; $('back').onclick=home; $('go').onclick=()=>startUnit(u); wire(); window.scrollTo(0,0);
-  if(speaking()) setTimeout(()=>say(u.r),300);
+  if(speaking()) setTimeout(()=>say(coachOn()?`New stop: ${u.t}. ${u.r} Tap the words to hear them. Then tap Start.`:u.r),300);
 }
 
 /* ---------- Rounds ---------- */
-const PLAN=['choose','spell','hunt','spell','choose','spell'];
+const PLAN=['choose','spell','hunt','spell','boxes','spell'];
 function qType(it,pref){
   if(pref==='hunt') return it.wrong.length?'hunt':'spell';
+  if(pref==='boxes'){if(boxOk(it))return 'boxes';pref='choose'}
   if(pref==='choose'&&ROOT_UNITS.includes(it.unit)&&rootOf(it.w)) return 'root';
   if(pref==='choose'){if(it.kind==='mark'&&it.galts&&it.galts.some(a=>a))return 'gap';if(it.kind==='syl')return 'build';if(it.kind==='suf')return 'join';if(it.kind==='map')return 'base';pref='pick'}
   if(pref==='pick') return it.wrong.length?'pick':'spell';
@@ -873,7 +946,7 @@ function topBar(){
 function showQ(){
   if(RUN.i>=RUN.q.length) return endRound();
   const q=RUN.q[RUN.i];
-  SCREEN='q'; setTimeout(walkBear,0); ({gap:qGap,pick:qPick,build:qBuild,join:qJoin,base:qBase,spell:qSpell,copy:qCopy,hunt:qHunt,root:qRoot,dict:qDict})[q.type](q);
+  SCREEN='q'; setTimeout(walkBear,0); ({gap:qGap,pick:qPick,build:qBuild,join:qJoin,base:qBase,spell:qSpell,copy:qCopy,hunt:qHunt,root:qRoot,dict:qDict,boxes:qBoxes})[q.type](q); sayPrompt(q);
   $('back').onclick=home; wire(); window.scrollTo(0,0);
 }
 function ruleOf(it){const u=it.unit==='my'?myUnit():UNIT_BY_ID[it.unit];return u?u.r:''}
@@ -886,7 +959,7 @@ function answer(q,ok,attempt){
   if(ok){const src=app.querySelector('.choice.right,#spellIn,#built,.hw.found');if(src){src.classList.add('glow')} if(firstTime) flyFish(src);el.className='fb good';el.innerHTML=`<h3>${q.retry?'Fixed it!':'Yes!'}${firstTime?' +1 '+FISH:''}</h3>`;}
   else{el.className='fb try';el.innerHTML=`<h3>Almost!</h3>${attempt!=null?diffHTML(attempt,it.w):''}${attempt==null?`<div class="bigword">${heartHTML(it.w)||esc(it.w)}</div>`:''}<p>${esc(ruleOf(it))}</p>`;}
   el.innerHTML+=`<button class="btn block" id="nextBtn">Next</button>`;
-  if(!ok) setTimeout(()=>say(it.w),200);
+  {const fs=feedbackSpeech(ok,it,q.retry);if(fs)setTimeout(()=>say(fs),200);}
   const nb=$('nextBtn'); nb.onclick=()=>{RUN.i++;showQ()}; nb.focus({preventScroll:true});
   el.scrollIntoView({behavior:'smooth',block:'nearest'});
   save();
@@ -900,7 +973,6 @@ function choiceQ(q,prompt,head,opts,correct,onPick){
     app.querySelectorAll('.choice').forEach(c=>{c.disabled=true;if(c.dataset.o===correct)c.classList.add('right');else if(c===b)c.classList.add('wrong')});
     if(onPick) onPick(); answer(q,ok,null);
   });
-  if(speaking()) setTimeout(()=>sayItem(q.it),250);
 }
 function qGap(q){const it=q.it, opts=shuffle([it.g,...shuffle(it.galts.filter(a=>a)).slice(0,2)]);
   choiceQ(q,'Pick the letters',`${speakBtn(it.w)}<div class="gapword">${esc(it.pre)}<span class="hole" id="hole">?</span>${esc(it.post)}</div>`,opts,it.g,()=>{$('hole').textContent=it.g})}
@@ -922,7 +994,6 @@ function qBuild(q){
   app.querySelectorAll('.tile').forEach(b=>b.onclick=()=>{picked.push(+b.dataset.i);draw();
     if(picked.length===it.syl.length){const word=picked.map(i=>tiles[i]).join('');$('undo').hidden=true;answer(q,word===it.w,word)}});
   $('undo').onclick=()=>{picked.pop();draw()};
-  if(speaking()) setTimeout(()=>say(it.w),250);
 }
 function typeForm(prompt){
   return `<form id="wf" autocomplete="off"><label for="spellIn" class="${prompt?'prompt':'sr'}">${prompt||'Type the word'}</label>
@@ -943,7 +1014,7 @@ function qSpell(q){
   app.innerHTML=`${topBar()}<section class="card"><p class="prompt">Listen and spell</p>
     <div class="row center-row"><button class="speak big" id="hearW">${ICON_SPEAK}Hear it</button>${slowBtn('slowW')}</div>${cueHTML(it)}
     ${typeForm('')}<div id="fb" hidden></div></section>`;
-  $('hearW').onclick=()=>sayItem(it); $('slowW').onclick=()=>saySlow(it.w); bindType(q); setTimeout(()=>{if(!$('spellIn'))return;sayItem(it);$('spellIn').focus()},250);
+  $('hearW').onclick=()=>sayItem(it); $('slowW').onclick=()=>saySlow(it.w); bindType(q); setTimeout(()=>{if($('spellIn'))$('spellIn').focus()},250);
 }
 function qCopy(q){
   const it=q.it;
@@ -964,10 +1035,10 @@ function qHunt(q){
    <div class="hunt">${toks.map((k,i)=>`<button class="hw" data-i="${i}">${esc(k.t)}</button>`).join(' ')}</div>
    <div id="wrap" hidden>${speakBtn(it.w)}${cueHTML(it)}${typeForm('Fix it')}</div><div id="fb" hidden></div></section>`;
   app.querySelectorAll('.hw').forEach(b=>b.onclick=()=>{const k=toks[+b.dataset.i];app.querySelectorAll('.hw').forEach(x=>x.disabled=true);
-    if(k.bad){b.classList.add('found');$('wrap').hidden=false;$('spellIn').focus();sayItem(it);}
+    if(k.bad){b.classList.add('found');$('wrap').hidden=false;$('spellIn').focus();say(coachOn()?'Yes, that one. Now fix it. The word is '+itemSpeech(it):itemSpeech(it));}
     else{b.classList.add('wrong');app.querySelectorAll('.hw').forEach(x=>{if(toks[+x.dataset.i].bad)x.classList.add('found')});answer(q,false,null)}});
   bindType(q);
-  if(speaking()) setTimeout(()=>say('Find the mistake.'),250);
+
 }
 /* Root Canyon: what does the root mean? */
 function qRoot(q){
@@ -983,7 +1054,7 @@ function qDict(q){
    <form id="df" autocomplete="off"><label for="dIn" class="sr">Write the sentence</label>
     <textarea id="dIn" class="spell sentence" rows="3" autocapitalize="sentences" autocorrect="off" spellcheck="false"></textarea>
     <button class="btn block" type="submit">Check</button></form><div id="fb" hidden></div></section>`;
-  const play=()=>say(s); $('hearS').onclick=play; $('slowS').onclick=()=>saySlow(s); setTimeout(()=>{if(!$('dIn'))return;play();$('dIn').focus()},250);
+  const play=()=>say(s); $('hearS').onclick=play; $('slowS').onclick=()=>saySlow(s); setTimeout(()=>{if(!$('dIn'))return;setTimeout(()=>{if($('dIn'))play()},coachOn()?2600:0);$('dIn').focus()},250);
   $('df').onsubmit=e=>{e.preventDefault();const typed=words($('dIn').value);if(!typed.length)return;
     $('df').querySelectorAll('textarea,button').forEach(x=>x.disabled=true);
     let got=0; const miss=new Set();
@@ -1048,6 +1119,7 @@ function endRound(){
     ${again?`<p>Spell every listening word right to pass.</p>`:''}
     ${btn?`<button class="btn block" id="${btn[0]}">${btn[1]}</button>`:''}
     <button class="btn secondary block" id="home">Home</button></section>`;
+  {const es=endSpeech(status,gem,R.kind);if(es)setTimeout(()=>say(es),300);}
   if(newFriend) app.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{const a=b.dataset.a;(S.units[newFriend.id]||{}).friend=a;(S.friends=S.friends||[]).push(a);S.newBuddy=true;save();
     $('pf').innerHTML=`<span class="bigani bounce">${a}</span>`; say('Hello, friend!')});
   if($('cont')) $('cont').onclick=()=>startCheck(nextCheck);
@@ -1103,6 +1175,7 @@ function grownups(){
    </section>
    <section class="card"><h2>Settings</h2>
     <label class="check"><input type="checkbox" id="voice" ${S.voice!==false?'checked':''}> Read words aloud${HAS_TTS?'':' (this browser has no speech)'}</label>
+    <label class="check"><input type="checkbox" id="coach" ${S.coach!==false?'checked':''}> Coach voice: reads every instruction and talks her through each lesson</label>
     ${HAS_TTS?`<label for="vsel">Voice</label><select class="field" id="vsel">${englishVoices().map(v=>`<option value="${esc(v.name)}" ${VOICE&&VOICE.name===v.name?'selected':''}>${esc(v.name)} (${esc(v.lang)})</option>`).join('')}</select>
     <label for="vrate">Speed</label><input type="range" id="vrate" min="0.6" max="1.1" step="0.05" value="${S.rate||.9}">
     <div class="row"><button class="btn secondary" id="vtest">Test voice</button></div>
@@ -1133,7 +1206,7 @@ function grownups(){
         S=readStudent(student().id)||blank();syncRoster();save(true);}
       else if(d.v===2){S=Object.assign(blank(),d);save(true);} else throw 0;
       $('rsMsg').textContent='Backup restored.'}catch(x){$('rsMsg').textContent='That file is not a spelling backup.'}};r.readAsText(f)};
-  $('voice').onchange=e=>{S.voice=e.target.checked;save()};
+  $('voice').onchange=e=>{S.voice=e.target.checked;save()}; $('coach').onchange=e=>{S.coach=e.target.checked;save()};
   if($('vsel')){$('vsel').onchange=e=>{S.voiceName=e.target.value;pickVoice();save();say('Hello! Let\'s spell together.')};
     $('vrate').onchange=e=>{S.rate=+e.target.value;save();say('beach')};
     $('vtest').onclick=()=>say('Hello! Can you spell the word, beach?');}
