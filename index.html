@@ -221,6 +221,7 @@ textarea.sentence{font-family:var(--body),system-ui,sans-serif;font-size:1.3rem;
 <body>
 <div id="app"></div>
 <script>
+var AUDIO_KEYS=new Set();
 /* ---------- Scope and sequence: 9 phases, phoneme-grapheme units ----------
  Entry formats in w (space separated):
    r[ai]n          marked spelling choice; wrong options come from the unit's alts
@@ -762,7 +763,8 @@ function endSpeech(status,gem,kind){
 }
 let GREETED=false;
 function greet(){if(GREETED||!coachOn())return;GREETED=true;const n=ROSTER.students.length>1||student().name?student().name:'';
-  setTimeout(()=>{if(SCREEN==='home')say(`Hi${n?' '+n:''}! Tap Go when you're ready.`)},400)}
+  const line=n&&!(useClips()&&!hasClip('Hi '+n+'!'))?`Hi ${n}! Tap Go when you're ready.`:"Hi! Tap Go when you're ready.";
+  setTimeout(()=>{if(SCREEN==='home')say(line)},400)}
 
 /* ---------- Sound boxes: one box for each sound, early stops only ---------- */
 const GRAPH=['tch','dge','igh','ck','sh','ch','th','ng','wh','qu','ee','ea','ai','ay','oa','ow','oo','ew','ue','ou','oi','oy','ll','ss','ff','zz'];
@@ -875,6 +877,64 @@ function qParts(q){
     $('partIn').focus()};
   setTimeout(()=>{if(!$('partIn'))return;$('partIn').focus();setTimeout(playPart,coachOn()?2200:200)},250);
 }
+/* ---------- Recorded natural voice: plays a clip for each sentence when one exists, else the device voice ---------- */
+/* AUDIO_KEYS is filled in by audio-manifest.js on the hosted site. Empty means device voice only. */
+var AUDIO_KEYS=typeof AUDIO_KEYS!=='undefined'?AUDIO_KEYS:new Set();
+const AUDIO_DIR='audio/';
+function normSpeech(t){return String(t).toLowerCase().replace(/[’‘`]/g,"'").replace(/\s+/g,' ').replace(/^[\s.,!?:;]+|[\s.,!?:;]+$/g,'').trim()}
+function fnv(t){let h=0x811c9dc5;for(const ch of new TextEncoder().encode(t)){h^=ch;h=Math.imul(h,0x01000193)>>>0}return h.toString(16).padStart(8,'0')}
+const clipKey=t=>fnv(normSpeech(t));
+const hasClip=t=>{const n=normSpeech(t);return !n||AUDIO_KEYS.has(fnv(n))};
+const LETTERS=s=>s.split(/,\s*/).map(x=>x.trim()).filter(Boolean);
+/* Break a line into sentences, and the few patterns with a word inside into their fixed parts */
+function speechSegments(t){
+  const out=[];
+  String(t).split(/(?<=[.!?])\s+/).forEach(s=>{const n=normSpeech(s);
+    if(!n){out.push('');return}
+    let m;
+    if(AUDIO_KEYS.has(fnv(n))){out.push(n);return}
+    if((m=n.match(/^(.+) is spelled (.+)$/))){out.push(m[1],'is spelled',...LETTERS(m[2]));return}
+    if((m=n.match(/^that part is (.+)$/))){out.push('that part is',...LETTERS(m[1]));return}
+    if((m=n.match(/^the word is (.+)$/))){out.push('the word is',m[1]);return}
+    if((m=n.match(/^([a-z']+) is (open|closed), so (.+)$/))){out.push(m[1],`is ${m[2]}, so ${m[3]}`);return}
+    out.push(n)});
+  return out;
+}
+let PLAY_TOKEN=0, CUR_AUDIO=null;
+const useClips=()=>AUDIO_KEYS.size>0&&S.recorded!==false;
+function stopSpeech(){PLAY_TOKEN++;if(CUR_AUDIO){try{CUR_AUDIO.pause()}catch(e){}CUR_AUDIO=null}try{speechSynthesis.cancel()}catch(e){}}
+function say(t,rate){
+  if(!speaking()) return;
+  const segs=useClips()?speechSegments(t):null;
+  if(!segs||!segs.every(hasClip)){stopSpeech();return ttsSay(t,rate)}
+  stopSpeech(); const tok=PLAY_TOKEN, pr=rate?Math.max(.6,Math.min(1.2,rate/.9)):1;
+  const next=i=>{if(tok!==PLAY_TOKEN||i>=segs.length)return;const s=segs[i];
+    if(!s){setTimeout(()=>next(i+1),350);return}
+    const a=new Audio(AUDIO_DIR+fnv(s)+'.mp3');CUR_AUDIO=a;a.playbackRate=pr;try{a.preservesPitch=true}catch(e){}
+    const go=()=>setTimeout(()=>next(i+1),/^[a-z']$|^apostrophe$/.test(s)?60:120);
+    a.onended=go;a.onerror=()=>{if(tok===PLAY_TOKEN){AUDIO_KEYS.delete(fnv(s));ttsSay(segs.slice(i).join('. '),rate)}};
+    a.play().catch(()=>{if(tok===PLAY_TOKEN)ttsSay(segs.slice(i).join('. '),rate)})};
+  next(0);
+}
+/* Every line the app can say, for the recording script */
+function allSpeech(){
+  const L=new Set(), ORIG={}, add=t=>{String(t).split(/(?<=[.!?])\s+/).forEach(o=>{const n=normSpeech(o);if(n&&!ORIG[n])ORIG[n]=o.trim()});speechSegments(t).forEach(s=>s&&L.add(s))};
+  'abcdefghijklmnopqrstuvwxyz'.split('').forEach(c=>L.add(c)); L.add('apostrophe');
+  ['is spelled','that part is','the word is','is open, so the vowel says its name','is closed, so the vowel is short'].forEach(x=>L.add(x));
+  UNITS.forEach(u=>{add(u.r);add(`New stop: ${u.t}.`);u.items.forEach(it=>{add(it.w);const h=HOMO[it.w];if(h)add(h[2]);(sylOf(it)||[]).forEach(p=>L.add(normSpeech(p)));if(it.kind==='syl')add(it.syl.join('. . '))})});
+  Object.keys(SPLIT).forEach(w=>SPLIT[w].forEach(p=>L.add(normSpeech(p))));
+  Object.values(FAM||{}).forEach(f=>f.forEach(([k,ws])=>ws.split(' ').forEach(add)));
+  Object.values(SENT).forEach(add);
+  TOOLS.forEach(t=>{add(`You get a new tool: ${t.n}.`);add(`Use your ${t.n.toLowerCase()} tool.`);add(t.n+'. '+t.t)});
+  Object.values(LINES).flat().forEach(add);
+  ["You're on a roll. Let's make it harder.","Hot streak! Try this one from memory.",'Take your time.','No rush. You can hear it slowly too.',
+   'Yes!','Nice work!','You got it!','Great spelling!','Fixed it!','Yes, that is it now.','Almost.',
+   'Great. Let us keep going.','Thanks. Now I know where to start.','You passed this stop! Pick a friend to join you.','You mastered this stop!',
+   "Good try. Let's practise these again.",'Nice review!','And you reached your goal for today!',"Hi! Tap Go when you're ready.",
+   "Who's practising?","Sound is on. I'll talk you through it.",'Sound is on.','Hello, friend!','Your spelling tools. Tap one to hear it.',
+   'Find the mistake.','Yes, that one. Now fix it.','Tap the words to hear them. Then tap Start.'].forEach(add);
+  return [...L].filter(Boolean).map(t=>({key:fnv(t),text:ORIG[t]||t,letter:/^[a-z]$/.test(t)}));
+}
 /* ---------- Helpers ---------- */
 const app=document.getElementById('app');
 const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -893,7 +953,7 @@ function englishVoices(){try{return speechSynthesis.getVoices().filter(v=>/^en/i
 function pickVoice(){const vs=englishVoices();VOICE=(S.voiceName&&vs.find(v=>v.name===S.voiceName))||vs[0]||null}
 if(HAS_TTS){pickVoice();try{speechSynthesis.onvoiceschanged=pickVoice}catch(e){}}
 const speaking=()=>HAS_TTS&&S.voice!==false;
-function say(t,rate){if(!speaking())return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.rate=rate||S.rate||.9;u.pitch=1;u.lang=VOICE?VOICE.lang:'en-CA';if(VOICE)u.voice=VOICE;speechSynthesis.speak(u)}catch(e){}}
+function ttsSay(t,rate){if(!speaking())return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.rate=rate||S.rate||.9;u.pitch=1;u.lang=VOICE?VOICE.lang:'en-CA';if(VOICE)u.voice=VOICE;speechSynthesis.speak(u)}catch(e){}}
 const ICON_SPEAK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/><path d="M16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/></svg>';
 const FISH='<svg viewBox="0 0 40 24" aria-hidden="true"><path d="M2 12c6-9 20-10 28 0-8 10-22 9-28 0z" fill="var(--salmon)"/><path d="M29 12l9-7v14z" fill="var(--salmon)"/><circle cx="10" cy="10" r="2" fill="var(--surface)"/></svg>';
 function bear(){return `<svg class="bear" viewBox="0 0 120 104" aria-hidden="true"><circle cx="26" cy="26" r="17" fill="var(--fur)"/><circle cx="94" cy="26" r="17" fill="var(--fur)"/><circle cx="26" cy="26" r="8" fill="var(--fur-light)"/><circle cx="94" cy="26" r="8" fill="var(--fur-light)"/><ellipse cx="60" cy="56" rx="44" ry="42" fill="var(--fur)"/><ellipse cx="60" cy="68" rx="20" ry="16" fill="var(--fur-light)"/><ellipse cx="60" cy="60" rx="7" ry="5" fill="var(--nose)"/><circle cx="43" cy="46" r="4.5" fill="var(--nose)"/><circle cx="77" cy="46" r="4.5" fill="var(--nose)"/><path d="M50 70q10 9 20 0" stroke="var(--nose)" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`}
@@ -1105,7 +1165,7 @@ function qBase(q){const it=q.it, opts=shuffle([it.w,...shuffle(it.wrong).slice(0
 function u_prompt(it){return 'Pick the word'}
 function qBuild(q){
   const it=q.it, tiles=shuffle([...it.syl,it.decoy||'']).filter(Boolean); let picked=[];
-  app.innerHTML=`${topBar()}<section class="card"><p class="prompt">Build the word</p>${speakBtn(it.syl.join(' '),'Hear the parts')}
+  app.innerHTML=`${topBar()}<section class="card"><p class="prompt">Build the word</p>${speakBtn(it.syl.join('. . '),'Hear the parts')}
    <div class="built" id="built" aria-live="polite"></div>
    <div class="tiles">${tiles.map((t,i)=>`<button class="tile" data-i="${i}">${esc(t)}</button>`).join('')}</div>
    <button class="link" id="undo">Undo</button><div id="fb" hidden></div></section>`;
@@ -1296,6 +1356,7 @@ function grownups(){
    </section>
    <section class="card"><h2>Settings</h2>
     <label class="check"><input type="checkbox" id="voice" ${S.voice!==false?'checked':''}> Read words aloud${HAS_TTS?'':' (this browser has no speech)'}</label>
+    ${AUDIO_KEYS.size?`<label class="check"><input type="checkbox" id="recorded" ${S.recorded!==false?'checked':''}> Natural recorded voice (words added from her stories use the device voice)</label>`:''}
     <label class="check"><input type="checkbox" id="coach" ${S.coach!==false?'checked':''}> Coach voice: reads every instruction and talks her through each lesson</label>
     ${HAS_TTS?`<label for="vsel">Voice</label><select class="field" id="vsel">${englishVoices().map(v=>`<option value="${esc(v.name)}" ${VOICE&&VOICE.name===v.name?'selected':''}>${esc(v.name)} (${esc(v.lang)})</option>`).join('')}</select>
     <label for="vrate">Speed</label><input type="range" id="vrate" min="0.6" max="1.1" step="0.05" value="${S.rate||.9}">
@@ -1327,7 +1388,7 @@ function grownups(){
         S=readStudent(student().id)||blank();syncRoster();save(true);}
       else if(d.v===2){S=Object.assign(blank(),d);save(true);} else throw 0;
       $('rsMsg').textContent='Backup restored.'}catch(x){$('rsMsg').textContent='That file is not a spelling backup.'}};r.readAsText(f)};
-  $('voice').onchange=e=>{S.voice=e.target.checked;save()}; $('coach').onchange=e=>{S.coach=e.target.checked;save()};
+  $('voice').onchange=e=>{S.voice=e.target.checked;save()}; $('coach').onchange=e=>{S.coach=e.target.checked;save()}; if($('recorded'))$('recorded').onchange=e=>{S.recorded=e.target.checked;save();say('Hello, friend!')};
   if($('vsel')){$('vsel').onchange=e=>{S.voiceName=e.target.value;pickVoice();save();say('Hello! Let\'s spell together.')};
     $('vrate').onchange=e=>{S.rate=+e.target.value;save();say('beach')};
     $('vtest').onclick=()=>say('Hello! Can you spell the word, beach?');}
