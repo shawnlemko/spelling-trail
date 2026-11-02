@@ -179,6 +179,29 @@ textarea.sentence{font-family:var(--body),system-ui,sans-serif;font-size:1.3rem;
 .center-row{justify-content:center;gap:16px}
 .pickani{font-size:3rem;background:var(--surface);border:2px solid var(--line);border-radius:18px;padding:8px 18px;min-width:88px}
 .pickani:hover{border-color:var(--pine)}
+.trail{flex:1;position:relative;height:14px;margin:0 14px;background:repeating-linear-gradient(90deg,var(--line) 0 10px,transparent 10px 16px);border-radius:99px}
+.trail i{position:absolute;left:0;top:0;bottom:0;background:var(--pine);border-radius:99px;transition:width .5s ease}
+.walker{position:absolute;top:50%;width:30px;height:30px;margin-left:-15px;transform:translateY(-58%);transition:left .5s ease}
+.walker svg{width:30px;height:auto;display:block;animation:step .5s ease}
+@keyframes step{0%,100%{transform:rotate(0)}30%{transform:rotate(-8deg) translateY(-3px)}70%{transform:rotate(8deg) translateY(-3px)}}
+.flyfish{position:fixed;left:0;top:0;width:40px;pointer-events:none;z-index:50}
+.flyfish svg{width:40px;height:24px}
+.bump{animation:bump .35s ease}
+@keyframes bump{50%{transform:scale(1.3)}}
+.glow{animation:glow .7s ease}
+@keyframes glow{0%{box-shadow:0 0 0 0 var(--pine)}40%{box-shadow:0 0 0 6px var(--pine-soft);background:var(--pine-soft)}100%{box-shadow:0 0 0 0 transparent}}
+.heart{display:inline-block;animation:beat .9s ease .2s 1}
+@keyframes beat{30%{transform:scale(1.25)}60%{transform:scale(.95)}}
+.bearbox{position:relative;flex:none}
+.buddy{position:absolute;right:-14px;bottom:-4px;font-size:2.2rem;line-height:1}
+.popin,.bounce{display:inline-block;animation:popin .7s cubic-bezier(.3,1.6,.5,1)}
+@keyframes popin{0%{transform:scale(0) translateY(20px)}100%{transform:none}}
+.scene{display:block;width:100%;height:110px;margin:8px 0 4px;border-radius:18px}
+.scene .s1{fill:var(--pine-soft)}.scene .s2{fill:color-mix(in srgb,var(--pine) 35%,var(--bg))}.scene .s3{fill:var(--pine)}.scene .s4{fill:var(--fur)}
+.scene .s5{fill:var(--lake-soft);stroke:var(--lake);stroke-width:1.5}.scene .s6{fill:var(--salmon)}.scene .s7{fill:var(--gold)}
+.scene .s8{fill:var(--surface)}.scene .s9{fill:color-mix(in srgb,var(--salmon) 45%,var(--bg))}.scene .s10{stroke:var(--salmon);fill:none}
+.scene .s11{fill:var(--ink);opacity:.75}.scene .s12{fill:var(--gold)}
+.scene.lake .s2{fill:color-mix(in srgb,var(--lake) 25%,var(--bg))}
 </style>
 
 </head>
@@ -650,6 +673,35 @@ const FAM_RULE={'4.10':'Learn these by look. aw sits at the end, or before n or 
  '4.11':'Learn these by look. aught: caught, taught, daughter. ought: thought, bought, brought.',
  '8.3':'Learn these by look. Only a few use aught: caught, taught. Most use ought.'};
 Object.entries(FAM_RULE).forEach(([id,r])=>{const u=UNIT_BY_ID[id];if(u)u.r=r});
+/* ---------- Visual feedback: short, no reading, off when the device asks for reduced motion ---------- */
+const CALM=()=>{try{return matchMedia('(prefers-reduced-motion: reduce)').matches}catch(e){return false}};
+const MINI_BEAR='<svg viewBox="0 0 120 104" aria-hidden="true"><circle cx="26" cy="26" r="17" fill="var(--fur)"/><circle cx="94" cy="26" r="17" fill="var(--fur)"/><ellipse cx="60" cy="56" rx="44" ry="42" fill="var(--fur)"/><ellipse cx="60" cy="68" rx="20" ry="16" fill="var(--fur-light)"/><ellipse cx="60" cy="60" rx="7" ry="5" fill="var(--nose)"/><circle cx="43" cy="46" r="5" fill="var(--nose)"/><circle cx="77" cy="46" r="5" fill="var(--nose)"/></svg>';
+/* The bear walks along the trail from the last spot to the new one */
+function walkBear(){const w=app.querySelector('.walker');if(!w)return;const to=w.dataset.to;
+  if(CALM()){w.style.left=to+'%';return}requestAnimationFrame(()=>requestAnimationFrame(()=>{w.style.left=to+'%';const f=app.querySelector('.trail i');if(f)f.style.width=to+'%'}))}
+/* A fish swims from the answer up into the counter */
+function flyFish(from){const fc=$('fc');if(!fc)return;
+  const n=RUN.fish, done=()=>{if(!fc.isConnected)return;fc.innerHTML=FISH+n;fc.classList.remove('bump');void fc.offsetWidth;fc.classList.add('bump')};
+  if(CALM()||!from||!from.getBoundingClientRect||!document.body.animate){done();return}
+  const a=from.getBoundingClientRect(), b=fc.getBoundingClientRect(), f=document.createElement('div');
+  f.className='flyfish';f.innerHTML=FISH;document.body.appendChild(f);
+  const x0=a.left+a.width/2-20,y0=a.top+a.height/2-12,x1=b.left,y1=b.top;
+  f.animate([{transform:`translate(${x0}px,${y0}px) scale(1.4)`,opacity:1},{transform:`translate(${(x0+x1)/2}px,${Math.min(y0,y1)-40}px) scale(1.2)`,opacity:1,offset:.5},{transform:`translate(${x1}px,${y1}px) scale(.7)`,opacity:.6}],{duration:650,easing:'ease-in-out'})
+   .onfinish=()=>{f.remove();done()};
+}
+/* Scenery for home: changes as she moves through the trail */
+function sceneOf(){const u=currentUnit();if(!u)return 'mine';const p=u.p;return p<=3?'forest':p<=5?'lake':p<=7?'meadow':p<=9?'peaks':'canyon'}
+function sceneSVG(k){
+  const hills='<path class="s1" d="M0 70 Q60 30 130 60 T260 50 T400 60 V120 H0Z"/><path class="s2" d="M0 90 Q80 60 170 85 T400 80 V120 H0Z"/>';
+  const extra={
+   forest:[30,90,150,300,350].map((x,i)=>`<path class="s3" d="M${x} ${92-i%2*8} l14 -34 l14 34z"/><rect class="s4" x="${x+12}" y="${92-i%2*8}" width="4" height="8"/>`).join(''),
+   lake:'<ellipse class="s5" cx="250" cy="100" rx="120" ry="12"/><path class="s3" d="M40 88 l12 -28 l12 28z"/><path class="s3" d="M70 92 l10 -22 l10 22z"/>',
+   meadow:[50,120,210,290,360].map((x,i)=>`<circle class="s6" cx="${x}" cy="${98-i%3*4}" r="4"/>`).join('')+'<circle class="s7" cx="330" cy="28" r="14"/>',
+   peaks:'<path class="s1" d="M20 100 L110 22 L200 100Z M160 100 L260 12 L360 100Z"/><path class="s8" d="M110 22 l-16 14 h32z M260 12 l-18 16 h36z"/>',
+   canyon:'<path class="s9" d="M0 120 V58 h70 v14 h40 V120Z M270 120 V50 h60 v20 h70 V120Z"/><path class="s10" d="M0 72 h110 M270 70 h130" stroke-width="3"/>',
+   mine:'<path class="s9" d="M120 120 Q200 20 280 120Z"/><path class="s11" d="M165 120 Q200 60 235 120Z"/>'+[[60,104],[80,110],[320,106],[345,112],[200,112]].map(([x,y])=>`<circle class="s12" cx="${x}" cy="${y}" r="5"/>`).join('')}[k];
+  return `<svg class="scene ${k}" viewBox="0 0 400 120" preserveAspectRatio="xMidYMax slice" aria-hidden="true">${k==='peaks'||k==='canyon'||k==='mine'?'':hills}${extra}</svg>`;
+}
 /* ---------- Helpers ---------- */
 const app=document.getElementById('app');
 const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -730,14 +782,16 @@ function home(){
   const friends=UNITS.filter(u=>unitState(u.id).passed).length, multi=ROSTER.students.length>1;
   const fresh=!S.placement.done&&!friends; SCREEN='home';
   app.innerHTML=`
-   <div class="hero">${bear()}<div class="herotext"><h1>${multi?esc(studentName()):'Spelling Trail'}</h1>
+   <div class="hero"><div class="bearbox">${bear()}${(S.friends||[]).length?`<span class="buddy ${S.newBuddy?'popin':''}">${S.friends.slice(-1)[0]}</span>`:''}</div><div class="herotext"><h1>${multi?esc(studentName()):'Spelling Trail'}</h1>
      <div class="row"><span class="fishcount">${FISH}${S.fish}</span><span class="fishcount"><span class="gem"></span>${S.gems}</span><span class="fishcount">${(S.friends||[]).slice(-1)[0]||'🐾'}${friends}</span>${st?`<span class="streak">${st} day${st>1?'s':''}</span>`:''}</div></div></div>
    <section class="card today">
      <div class="goal"><div class="bar big"><i style="width:${pct}%"></i></div><span class="fishcount small2">${FISH}${Math.min(f,GOAL)}/${GOAL}</span></div>
      ${nx?`<button class="btn go" id="go"><span>${nx.label}</span><span class="cap">${esc(nx.cap)}</span></button>`:'<p class="center-t">Trail complete!</p>'}
      ${fresh?'<button class="link" id="skip">Skip the check</button>':''}
    </section>
+   ${sceneSVG(sceneOf())}
    <div class="row center-row">${multi?'<button class="link" id="who">Switch</button>':''}<button class="link" id="grown">Grown-ups</button></div>`;
+  if(S.newBuddy){S.newBuddy=false;save()}
   if(nx) $('go').onclick=nx.go;
   if(fresh) $('skip').onclick=()=>{S.placement.done=true;save();home()};
   $('grown').onclick=grownups; if(multi) $('who').onclick=who;
@@ -813,13 +867,13 @@ function startCheck(p){
   RUN={kind:'check',phase:p,q,i:0,fish:0,first:{},n:q.length}; showQ();
 }
 function topBar(){
-  const pct=Math.round(RUN.i/RUN.q.length*100);
-  return `<div class="top"><button class="back" id="back" aria-label="Leave this round">←</button><div class="bar"><i style="width:${pct}%"></i></div><span class="fishcount">${FISH}${RUN.fish}</span></div>`;
+  const pct=Math.round(RUN.i/RUN.q.length*100), prev=RUN.lastPct==null?0:RUN.lastPct; RUN.lastPct=pct;
+  return `<div class="top"><button class="back" id="back" aria-label="Leave this round">←</button><div class="trail" aria-hidden="true"><i style="width:${prev}%"></i><span class="walker" data-to="${pct}" style="left:${prev}%">${MINI_BEAR}</span></div><span class="fishcount" id="fc">${FISH}${RUN.fish}</span></div>`;
 }
 function showQ(){
   if(RUN.i>=RUN.q.length) return endRound();
   const q=RUN.q[RUN.i];
-  SCREEN='q'; ({gap:qGap,pick:qPick,build:qBuild,join:qJoin,base:qBase,spell:qSpell,copy:qCopy,hunt:qHunt,root:qRoot,dict:qDict})[q.type](q);
+  SCREEN='q'; setTimeout(walkBear,0); ({gap:qGap,pick:qPick,build:qBuild,join:qJoin,base:qBase,spell:qSpell,copy:qCopy,hunt:qHunt,root:qRoot,dict:qDict})[q.type](q);
   $('back').onclick=home; wire(); window.scrollTo(0,0);
 }
 function ruleOf(it){const u=it.unit==='my'?myUnit():UNIT_BY_ID[it.unit];return u?u.r:''}
@@ -829,7 +883,7 @@ function answer(q,ok,attempt){
     const td=today(); td.total++; if(ok) td.right++;
     if(!ok&&!q.check){const b=RUN.q.findIndex(x=>x.bonus);RUN.q.splice(b<0?RUN.q.length:b,0,{it,type:'copy',retry:true})}}
   const el=$('fb'); el.hidden=false;
-  if(ok){el.className='fb good';el.innerHTML=`<h3>${q.retry?'Fixed it!':'Yes!'}${firstTime?' +1 '+FISH:''}</h3>`;}
+  if(ok){const src=app.querySelector('.choice.right,#spellIn,#built,.hw.found');if(src){src.classList.add('glow')} if(firstTime) flyFish(src);el.className='fb good';el.innerHTML=`<h3>${q.retry?'Fixed it!':'Yes!'}${firstTime?' +1 '+FISH:''}</h3>`;}
   else{el.className='fb try';el.innerHTML=`<h3>Almost!</h3>${attempt!=null?diffHTML(attempt,it.w):''}${attempt==null?`<div class="bigword">${heartHTML(it.w)||esc(it.w)}</div>`:''}<p>${esc(ruleOf(it))}</p>`;}
   el.innerHTML+=`<button class="btn block" id="nextBtn">Next</button>`;
   if(!ok) setTimeout(()=>say(it.w),200);
@@ -994,8 +1048,8 @@ function endRound(){
     ${again?`<p>Spell every listening word right to pass.</p>`:''}
     ${btn?`<button class="btn block" id="${btn[0]}">${btn[1]}</button>`:''}
     <button class="btn secondary block" id="home">Home</button></section>`;
-  if(newFriend) app.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{const a=b.dataset.a;(S.units[newFriend.id]||{}).friend=a;(S.friends=S.friends||[]).push(a);save();
-    $('pf').innerHTML=`<span class="bigani">${a}</span>`; say('Hello, friend!')});
+  if(newFriend) app.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{const a=b.dataset.a;(S.units[newFriend.id]||{}).friend=a;(S.friends=S.friends||[]).push(a);S.newBuddy=true;save();
+    $('pf').innerHTML=`<span class="bigani bounce">${a}</span>`; say('Hello, friend!')});
   if($('cont')) $('cont').onclick=()=>startCheck(nextCheck);
   if($('nx')) $('nx').onclick=()=>intro(status==='keep practising'&&R.unit?R.unit.id:cur.id);
   $('home').onclick=()=>{OPEN_PHASE=null;home()};
