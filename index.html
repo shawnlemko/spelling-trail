@@ -220,6 +220,7 @@ textarea.sentence{font-family:var(--body),system-ui,sans-serif;font-size:1.3rem;
 .mode{flex:none;font-size:.85rem;font-weight:700;padding:5px 10px;border-radius:99px;white-space:nowrap}
 .mode.check{background:var(--lake-soft);color:var(--lake)}.mode.learn{background:var(--pine-soft);color:var(--pine)}.mode.practice{background:var(--amber-soft);color:var(--amber)}
 .focus{text-align:center;margin:-4px 0 8px}.focus span{display:inline-block;font-size:.9rem;font-weight:700;padding:4px 12px;border-radius:10px;border:2px solid var(--pine-soft);color:var(--pine)}
+.loot{display:flex;justify-content:center;gap:22px;font-size:1.3rem;margin-bottom:12px}.loot b{margin-left:4px}
 .mode.inl{background:rgba(255,255,255,.25);color:inherit;font-size:.8rem;padding:2px 8px}
 .strip{position:fixed;left:0;right:0;bottom:0;display:flex;gap:3px;padding:0 10px 8px;opacity:.5;pointer-events:none;max-width:760px;margin:0 auto}
 .strip .seg{position:relative;height:5px;border-radius:3px;background:var(--line);overflow:visible}
@@ -981,7 +982,7 @@ function bear(){return `<svg class="bear" viewBox="0 0 120 104" aria-hidden="tru
 function speakBtn(t,label){return speaking()?`<span class="row center-row"><button class="speak" data-say="${esc(t)}">${ICON_SPEAK}${label||'Hear it'}</button>${label?'':`<button class="speak" data-slow="${esc(t)}" aria-label="Hear it slowly">🐢 Slow</button>`}</span>`:''}
 function wire(){app.querySelectorAll('[data-say]').forEach(b=>b.onclick=()=>say(b.dataset.say));app.querySelectorAll('[data-slow]').forEach(b=>b.onclick=()=>saySlow(b.dataset.slow))}
 /* Sound-alike words: a picture cue says which meaning we want; the other spelling is not counted as wrong */
-const HOMO={sun:['son','☀️','shines in the sky'],red:['read','🔴','a colour'],taught:['taut','🧑‍🏫','what a teacher did'],
+const HOMO={would:['wood','💭','as in: I would like a snack'],some:['sum','🍪','as in: some cookies'],weigh:['way','⚖️','as in: weigh it on a scale'],sun:['son','☀️','shines in the sky'],red:['read','🔴','a colour'],taught:['taut','🧑‍🏫','what a teacher did'],
  ate:['eight','🍽️','had a meal'],wrote:['rote','✏️','put words on paper'],lesson:['lessen','📚','time to learn at school'],
  cord:['chord','🔌','a long cable'],rained:['reigned|reined','🌧️','water fell from clouds'],might:['mite','🤔','maybe'],
  berries:['buries','🫐','small fruits'],bite:['byte','🍎','use your teeth'],boy:['buoy','👦','not a girl'],
@@ -1045,8 +1046,9 @@ function home(){
      ${fresh?'<button class="link" id="skip">Skip the check</button>':''}
    </section>
    ${sceneSVG(sceneOf())}
-   <div class="row center-row">${myTools().length?'<button class="btn secondary" id="tbx">🧰 My spelling tricks</button>':''}</div>
+   <div class="row center-row"><button class="btn secondary" id="chest">🎁 My treasure chest</button>${myTools().length?'<button class="btn secondary" id="tbx">🧰 My spelling tricks</button>':''}</div>
    <div class="row center-row">${multi?'<button class="link" id="who">Switch</button>':''}<button class="link" id="grown">Grown-ups</button></div>`;
+  $('chest').onclick=chest;
   if(S.newBuddy){S.newBuddy=false;save()}
   if(HAS_TTS){$('snd').onclick=()=>{S.voice=S.voice===false;save();home();if(speaking())say(coachOn()?"Sound is on. I'll talk you through it.":'Sound is on.')}}
   greet();
@@ -1077,10 +1079,12 @@ function trailMap(){
   window.scrollTo(0,0);
 }
 function chest(){
-  const got=UNITS.filter(u=>unitState(u.id).passed);
-  app.innerHTML=`<div class="top"><button class="back" id="back" aria-label="Back">←</button><h2>Friends</h2></div>
-   <section class="card"><div class="friends">${got.map(u=>`<span class="friend">${animalFor(u)}</span>`).join('')||'<p class="muted">Finish a stop to find a friend.</p>'}</div>
-   <div class="pieces big" aria-label="Map pieces">${PHASES.filter(p=>!p.bank).map(p=>`<i class="${phaseDone(p.n)?'got':''}"></i>`).join('')}</div></section>`;
+  const got=UNITS.filter(u=>unitState(u.id).passed), stars=UNITS.filter(u=>unitState(u.id).mastered).length;
+  const maps=PHASES.filter(p=>!p.bank);
+  app.innerHTML=`<div class="top"><button class="back" id="back" aria-label="Back">←</button><h2>🎁 My treasure chest</h2></div>
+   <section class="card"><h3>Friends ${got.length}</h3><div class="friends">${got.map(u=>`<span class="friend">${unitState(u.id).friend||animalFor(u)}</span>`).join('')||'<p class="muted">Finish a stop to find a friend.</p>'}</div></section>
+   <section class="card"><div class="loot"><span>${FISH}<b>${S.fish}</b></span><span><span class="gem"></span><b>${S.gems}</b></span><span>★<b>${stars}</b></span></div>
+   <div class="pieces big" aria-label="Map pieces">${maps.map(p=>`<i class="${phaseDone(p.n)?'got':''}"></i>`).join('')}</div></section>`;
   $('back').onclick=home; window.scrollTo(0,0);
 }
 
@@ -1333,7 +1337,7 @@ function endRound(){
     ${btn?`<button class="btn block" id="${btn[0]}">${btn[1]}</button>`:''}
     <button class="btn secondary block" id="home">Home</button></section>`;
   {const es=endSpeech(status,gem,R.kind);if(es)setTimeout(()=>say(es),300);}
-  if(newFriend) app.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{const a=b.dataset.a;(S.units[newFriend.id]||{}).friend=a;(S.friends=S.friends||[]).push(a);S.newBuddy=true;save();
+  if(newFriend) app.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{const a=b.dataset.a;(S.units[newFriend.id]=S.units[newFriend.id]||{}).friend=a;(S.friends=S.friends||[]).push(a);S.newBuddy=true;save();
     $('pf').innerHTML=`<span class="bigani bounce">${a}</span>`; say('Hello, friend!')});
   if($('cont')) $('cont').onclick=()=>startCheck(nextCheck);
   if($('nx')) $('nx').onclick=()=>intro(status==='keep practising'&&R.unit?R.unit.id:cur.id);
