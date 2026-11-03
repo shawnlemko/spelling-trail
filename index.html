@@ -1137,7 +1137,7 @@ function startUnit(u){
     else if(i===4&&PARTS_UNITS.includes(u.id)&&sylOf(it)) pref='parts';
     return {it,type:qType(it,pref)}});
   {const mine=(S.custom||[]).length&&u.id!=='my'?shuffle(myUnit().items).sort((a,b)=>((S.words[a.key]||{}).due||0)-((S.words[b.key]||{}).due||0))[0]:null;
-   if(mine) q.splice(Math.min(2,q.length),0,{it:mine,type:speaking()?'spell':'pick',mine:true});}
+   if(mine) q.splice(Math.min(2,q.length),0,{it:mine,type:speaking()?'spell':mine.wrong.length?'pick':'copy',mine:true});}
   {const last=q[q.length-1]; if(last&&speaking()&&q.length>=5){last.boss=true; if(last.type!=='parts') last.type='spell'}}
   if(speaking()&&u.p&&SENT[u.id]&&sentTargets(u).length) q.push({type:'dict',bonus:true,it:{key:'dict'}});
   RUN={kind:'unit',unit:u,q,i:0,fish:0,first:{},n:q.filter(x=>!x.bonus&&!x.mine).length,egg:!today().rounds}; showQ();
@@ -1183,7 +1183,7 @@ function adapt(q){
 /* After a miss: say the rule chant, then she taps the right spelling before moving on */
 function chantOf(it){const w=typeof toolWhy==='function'?toolWhy(it):'';return w&&w.includes(' is ')?w:(ruleOf(it).split(/(?<=[.!?])\s/)[0]||'')}
 function ruleCheck(it,attempt){const a=String(attempt||'').trim().toLowerCase();
-  const wrong=a&&a!==it.w.toLowerCase()&&a.length<=it.w.length+3?a:(it.wrong||[]).find(x=>x&&x!==it.w);
+  const wrong=a&&a!==it.w.toLowerCase()&&a.length<=it.w.length+3?a:((HUNT_OK[it.key]||[]).concat(it.unit==='my'?it.wrong:[])).find(x=>x&&x!==it.w);
   if(!wrong) return '';
   return `<div class="rulecheck"><p class="chant">${esc(chantOf(it))}</p><p class="small">Which one is right?</p><div class="choices c2">${shuffle([it.w,wrong]).map(o=>`<button class="choice rc" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div></div>`}
 function wireRuleCheck(it){app.querySelectorAll('.choice.rc').forEach(b=>b.onclick=()=>{
