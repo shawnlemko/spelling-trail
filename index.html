@@ -219,6 +219,7 @@ textarea.sentence{font-family:var(--body),system-ui,sans-serif;font-size:1.3rem;
 @media (min-width:1500px) and (min-height:900px){html{font-size:132%}#app{max-width:860px}}
 .mode{flex:none;font-size:.85rem;font-weight:700;padding:5px 10px;border-radius:99px;white-space:nowrap}
 .mode.check{background:var(--lake-soft);color:var(--lake)}.mode.learn{background:var(--pine-soft);color:var(--pine)}.mode.practice{background:var(--amber-soft);color:var(--amber)}
+.focus{text-align:center;margin:-4px 0 8px}.focus span{display:inline-block;font-size:.9rem;font-weight:700;padding:4px 12px;border-radius:10px;border:2px solid var(--pine-soft);color:var(--pine)}
 .mode.inl{background:rgba(255,255,255,.25);color:inherit;font-size:.8rem;padding:2px 8px}
 .strip{position:fixed;left:0;right:0;bottom:0;display:flex;gap:3px;padding:0 10px 8px;opacity:.5;pointer-events:none;max-width:760px;margin:0 auto}
 .strip .seg{position:relative;height:5px;border-radius:3px;background:var(--line);overflow:visible}
@@ -1143,8 +1144,9 @@ function skillStrip(q){
 }
 function topBar(){
   const pct=Math.round(RUN.i/RUN.q.length*100), prev=RUN.lastPct==null?0:RUN.lastPct; RUN.lastPct=pct;
-  return `<div class="top"><button class="back" id="back" aria-label="Leave this round">←</button>${modeBadge(runMode())}<div class="trail" aria-hidden="true"><i style="width:${prev}%"></i><span class="walker" data-to="${pct}" style="left:${prev}%">${MINI_BEAR}</span></div><span class="fishcount" id="fc">${FISH}${RUN.fish}</span></div>`;
+  return `<div class="top"><button class="back" id="back" aria-label="Leave this round">←</button>${modeBadge(runMode())}<div class="trail" aria-hidden="true"><i style="width:${prev}%"></i><span class="walker" data-to="${pct}" style="left:${prev}%">${MINI_BEAR}</span></div><span class="fishcount" id="fc">${FISH}${RUN.fish}</span></div>${focusBox()}`;
 }
+function focusBox(){const q=RUN.q[RUN.i];if(!q||q.bonus)return '';const u=(q.it&&q.it.unit&&UNIT_BY_ID[q.it.unit])||RUN.unit;return u&&u.t?`<div class="focus"><span>🎯 ${esc(u.t)}</span></div>`:''}
 function showQ(){
   if(RUN.i>=RUN.q.length) return endRound();
   const q=RUN.q[RUN.i];
