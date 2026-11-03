@@ -225,6 +225,9 @@ textarea.sentence{font-family:var(--body),system-ui,sans-serif;font-size:1.3rem;
 .strip .seg b{display:block;height:100%;border-radius:3px;background:var(--pine)}
 .strip .seg.here::after{content:'';position:absolute;left:50%;top:-4px;width:9px;height:9px;margin-left:-4.5px;border-radius:50%;background:var(--salmon);border:2px solid var(--bg)}
 .strip .gap{flex:0 0 8px}
+.toolcard .tuse{font-size:.9rem;text-align:center}
+.trick{display:block;margin:10px auto 0;font-size:.95rem}
+.trickpop{margin-top:10px}.trickpop .toolcard{width:100%}
 </style>
 
 </head>
@@ -800,34 +803,40 @@ function qBoxes(q){
 }
 /* ---------- Spelling Toolbox: the real terms, one card each, unlocked as she meets them ---------- */
 const TOOLS=[
- {id:'short',n:'Short vowel',i:'🔒',t:'One vowel closed in by consonants makes its short sound.',ex:'c-a-t',u:['1.1','1.2']},
- {id:'blend',n:'Blend',i:'🔗',t:'Two or three consonants side by side. You hear every one.',ex:'st-o-p',u:['1.3']},
- {id:'digraph',n:'Digraph',i:'👯',t:'Two letters that make one sound.',ex:'sh, ch, th, ng',u:['2.1','2.6','2.8']},
- {id:'guard',n:'Short vowel guards',i:'🛡️',t:'Right after a short vowel, use the bigger spelling: ck, tch, dge, ff, ll, ss.',ex:'duck, catch, edge, bell',u:['2.2','2.3','2.4','2.5']},
- {id:'silent',n:'Silent letters',i:'🤫',t:'Some letters are written but not said.',ex:'knee, wrong, lamb',u:['2.7']},
- {id:'magic',n:'Magic e',i:'✨',t:'A silent e at the end makes the vowel say its name.',ex:'tap → tape',u:['3.1','3.2','6.3']},
- {id:'soft',n:'Soft c and g',i:'🪶',t:'Before e, i or y, c says s and g often says j.',ex:'city, giant',u:['3.3']},
- {id:'team',n:'Vowel team',i:'🤝',t:'Two letters work together to make one vowel sound. Middle teams and end teams.',ex:'rain / day',u:['4.1','4.2','4.3','4.4','4.5','4.6','4.7','4.8','4.9','4.10','4.11','4.12']},
- {id:'rctl',n:'R-controlled vowel',i:'🐯',t:'An r after a vowel takes over its sound.',ex:'car, fern, bird, fork',u:['5.1','5.2','5.3']},
- {id:'closed',n:'Closed syllable',i:'🚪',t:'A part that ends in a consonant. The door is shut, so the vowel is short.',ex:'rab-bit',u:['6.1']},
- {id:'open',n:'Open syllable',i:'🌤️',t:'A part that ends in a vowel. The door is open, so the vowel says its name.',ex:'ti-ger',u:['6.2']},
- {id:'cle',n:'Consonant + le',i:'🧱',t:'The last part is a consonant plus le.',ex:'ta-ble, can-dle',u:['6.4']},
- {id:'claps',n:'Clap the parts',i:'👏',t:'Clap every part, spell each one, then check none went missing.',ex:'fan-tas-tic',u:['6.5','6.6']},
- {id:'endings',n:'Ending check',i:'🔧',t:'Vowel ending? Drop the silent e, double after 1-1-1, change y to i.',ex:'taste → tasty',u:['7.1','7.2','7.3','7.4','7.5','7.6','7.7','7.8','7.9','10.5']},
- {id:'heart',n:'Heart part',i:'♥',t:'Most of the word follows the rules. Learn the one tricky part by heart.',ex:'s♥ai♥d',u:['8.1','8.2','8.3','8.4','10.7']},
- {id:'schwa',n:'Schwa',i:'😶',t:'A lazy vowel that sounds like uh. Use a family word or your spelling voice.',ex:'please → pleasant',u:['9.1','9.2','9.3','9.4','9.5','9.7','9.8','9.9']},
- {id:'parts',n:'Prefixes and roots',i:'🧩',t:'Words are built from parts. Keep every part whole.',ex:'mis + spell, tele + scope',u:['9.6','10.1','10.2','10.3','10.4','10.6']}];
+ {id:'short',w:'you hear one quick vowel, like cat',n:'Short vowel',i:'🔒',t:'One vowel closed in by consonants makes its short sound.',ex:'c-a-t',u:['1.1','1.2']},
+ {id:'blend',w:'two sounds crash together at the start, like st',n:'Blend',i:'🔗',t:'Two or three consonants side by side. You hear every one.',ex:'st-o-p',u:['1.3']},
+ {id:'digraph',w:'two letters make one sound, like sh',n:'Digraph',i:'👯',t:'Two letters that make one sound.',ex:'sh, ch, th, ng',u:['2.1','2.6','2.8']},
+ {id:'guard',w:'a word ends right after a short vowel',n:'Short vowel guards',i:'🛡️',t:'Right after a short vowel, use the bigger spelling: ck, tch, dge, ff, ll, ss.',ex:'duck, catch, edge, bell',u:['2.2','2.3','2.4','2.5']},
+ {id:'silent',w:"a word has a letter you can't hear",n:'Silent letters',i:'🤫',t:'Some letters are written but not said.',ex:'knee, wrong, lamb',u:['2.7']},
+ {id:'magic',w:'a vowel says its own name',n:'Magic e',i:'✨',t:'A silent e at the end makes the vowel say its name.',ex:'tap → tape',u:['3.1','3.2','6.3']},
+ {id:'soft',w:'c sounds like s, or g sounds like j',n:'Soft c and g',i:'🪶',t:'Before e, i or y, c says s and g often says j.',ex:'city, giant',u:['3.3']},
+ {id:'team',w:'two vowels are next to each other',n:'Vowel team',i:'🤝',t:'Two letters work together to make one vowel sound. Middle teams and end teams.',ex:'rain / day',u:['4.1','4.2','4.3','4.4','4.5','4.6','4.7','4.8','4.9','4.10','4.11','4.12']},
+ {id:'rctl',w:'you hear ar, or, er, ir or ur',n:'R-controlled vowel',i:'🐯',t:'An r after a vowel takes over its sound.',ex:'car, fern, bird, fork',u:['5.1','5.2','5.3']},
+ {id:'closed',w:'a word part ends in a consonant',n:'Closed syllable',i:'🚪',t:'A part that ends in a consonant. The door is shut, so the vowel is short.',ex:'rab-bit',u:['6.1']},
+ {id:'open',w:'a word part ends in a vowel',n:'Open syllable',i:'🌤️',t:'A part that ends in a vowel. The door is open, so the vowel says its name.',ex:'ti-ger',u:['6.2']},
+ {id:'cle',w:'a word ends in -ble, -tle, -dle',n:'Consonant + le',i:'🧱',t:'The last part is a consonant plus le.',ex:'ta-ble, can-dle',u:['6.4']},
+ {id:'claps',w:'a word is long',n:'Clap the parts',i:'👏',t:'Clap every part, spell each one, then check none went missing.',ex:'fan-tas-tic',u:['6.5','6.6']},
+ {id:'endings',w:'you add an ending like -ing or -ed',n:'Ending check',i:'🔧',t:'Vowel ending? Drop the silent e, double after 1-1-1, change y to i.',ex:'taste → tasty',u:['7.1','7.2','7.3','7.4','7.5','7.6','7.7','7.8','7.9','10.5']},
+ {id:'heart',w:'a word breaks the rules',n:'Heart part',i:'♥',t:'Most of the word follows the rules. Learn the one tricky part by heart.',ex:'s♥ai♥d',u:['8.1','8.2','8.3','8.4','10.7']},
+ {id:'schwa',w:"you can't hear the vowel clearly",n:'Schwa',i:'😶',t:'A lazy vowel that sounds like uh. Use a family word or your spelling voice.',ex:'please → pleasant',u:['9.1','9.2','9.3','9.4','9.5','9.7','9.8','9.9']},
+ {id:'parts',w:'a long word is built from parts',n:'Prefixes and roots',i:'🧩',t:'Words are built from parts. Keep every part whole.',ex:'mis + spell, tele + scope',u:['9.6','10.1','10.2','10.3','10.4','10.6']}];
 const TOOL_OF={}; TOOLS.forEach(t=>t.u.forEach(id=>TOOL_OF[id]=t));
 const toolFor=id=>{const u=UNIT_BY_ID[id];return TOOL_OF[id]||(u&&u.bank?TOOLS.find(t=>t.id==='heart'):null)};
 const toolChip=t=>t?`<span class="toolchip">${t.i} ${esc(t.n)}</span>`:'';
 function unlockTool(id){const t=toolFor(id);if(!t)return null;S.tools=S.tools||{};if(S.tools[t.id])return null;S.tools[t.id]=dayNum();save();return t}
 const myTools=()=>TOOLS.filter(t=>(S.tools||{})[t.id]||t.u.some(id=>unitState(id).passed));
+const toolCard=t=>`<button class="toolcard" data-say="${esc(t.n+'. Use it when '+t.w+'. '+t.t)}"><span class="ti">${t.i}</span><b>${esc(t.n)}</b><span class="tuse">Use it when ${esc(t.w)}</span><span class="tex">${esc(t.ex)}</span></button>`;
+/* Stuck on a question? Show the trick for this stop, right there */
+function trickBtn(it){const t=it&&it.unit&&it.unit!=='my'?toolFor(it.unit):null;return t?`<button class="link trick" data-trick="${t.id}">🧰 Need a trick?</button>`:''}
+function wireTrick(){app.querySelectorAll('[data-trick]').forEach(b=>b.onclick=()=>{const t=TOOLS.find(x=>x.id===b.dataset.trick);
+  b.outerHTML=`<div class="trickpop">${toolCard(t)}</div>`;wire();say(`Here's a trick. ${t.n}. Use it when ${t.w}. ${t.t}`)})}
 function toolbox(){
   SCREEN='tools'; const got=myTools();
-  app.innerHTML=`<div class="top"><button class="back" id="back" aria-label="Back">←</button><h2>🧰 Toolbox</h2></div>
-   <div class="toolgrid">${got.map(t=>`<button class="toolcard" data-say="${esc(t.n+'. '+t.t)}"><span class="ti">${t.i}</span><b>${esc(t.n)}</b><span class="tex">${esc(t.ex)}</span></button>`).join('')||'<p class="muted center-t">Finish a stop to get your first tool.</p>'}</div>`;
+  app.innerHTML=`<div class="top"><button class="back" id="back" aria-label="Back">←</button><h2>🧰 My spelling tricks</h2></div>
+   <p class="center-t">Tricks that help you spell. Stuck? Find a trick.</p>
+   <div class="toolgrid">${got.map(toolCard).join('')||'<p class="muted center-t">Finish a stop to get your first trick.</p>'}</div>`;
   $('back').onclick=home; wire(); window.scrollTo(0,0);
-  if(coachOn()) setTimeout(()=>say('Your spelling tools. Tap one to hear it.'),300);
+  if(coachOn()) setTimeout(()=>say('These are your spelling tricks. When a word is hard, find a trick that helps. Tap one to hear it.'),300);
 }
 /* Sort: is this part open, closed, or magic e? */
 const SORT_UNITS=['6.1','6.2','6.3','6.4'];
@@ -1035,7 +1044,7 @@ function home(){
      ${fresh?'<button class="link" id="skip">Skip the check</button>':''}
    </section>
    ${sceneSVG(sceneOf())}
-   <div class="row center-row">${myTools().length?'<button class="btn secondary" id="tbx">🧰 Toolbox</button>':''}</div>
+   <div class="row center-row">${myTools().length?'<button class="btn secondary" id="tbx">🧰 My spelling tricks</button>':''}</div>
    <div class="row center-row">${multi?'<button class="link" id="who">Switch</button>':''}<button class="link" id="grown">Grown-ups</button></div>`;
   if(S.newBuddy){S.newBuddy=false;save()}
   if(HAS_TTS){$('snd').onclick=()=>{S.voice=S.voice===false;save();home();if(speaking())say(coachOn()?"Sound is on. I'll talk you through it.":'Sound is on.')}}
@@ -1139,7 +1148,7 @@ function topBar(){
 function showQ(){
   if(RUN.i>=RUN.q.length) return endRound();
   const q=RUN.q[RUN.i];
-  adapt(q); SCREEN='q'; setTimeout(()=>{walkBear();if(SCREEN==='q')app.insertAdjacentHTML('beforeend',skillStrip(q))},0); ({gap:qGap,pick:qPick,build:qBuild,join:qJoin,base:qBase,spell:qSpell,copy:qCopy,hunt:qHunt,root:qRoot,dict:qDict,boxes:qBoxes,sort:qSort,count:qCount,parts:qParts})[q.type](q); sayPrompt(q);
+  adapt(q); SCREEN='q'; setTimeout(()=>{walkBear();if(SCREEN==='q'){app.insertAdjacentHTML('beforeend',skillStrip(q));const c=app.querySelector('section.card');if(c&&!q.check&&!q.bonus&&!$('fb').hidden===false){const fb=$('fb');fb.insertAdjacentHTML('beforebegin',trickBtn(q.it));wireTrick()}}},0); ({gap:qGap,pick:qPick,build:qBuild,join:qJoin,base:qBase,spell:qSpell,copy:qCopy,hunt:qHunt,root:qRoot,dict:qDict,boxes:qBoxes,sort:qSort,count:qCount,parts:qParts})[q.type](q); sayPrompt(q);
   $('back').onclick=home; wire(); window.scrollTo(0,0);
 }
 /* Respond to how the round is going: a hot streak skips the easy steps; misses in a row bring in support */
